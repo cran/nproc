@@ -1,0 +1,10 @@
+ce633c2b86fbb58fc62cb5dbf6ce4e3d *DESCRIPTION
+a3c31a189b767f55a91aec177f685cc2 *NAMESPACE
+028e4a4703133192db22f40a3840644e *R/npc.R
+52ccdcafa8b3b1d4ecea668dff16d5fb *R/npc.core.R
+f5605fdb29dba73b1ba3ad2d15633183 *R/npfuns.R
+171a943c07aa1cbd2ed80cea33796007 *R/nproc.R
+d0ca109e6db9a1f1805fba5d1bf0546f *R/predict.npc.R
+6f381aeab54b40c961fc4d6667f35b83 *man/npc.Rd
+92d690c1262733801e3aa1e3f151c746 *man/nproc.Rd
+af3d3bbfb83aefc58408b3f1c3014742 *man/predict.npc.Rd
