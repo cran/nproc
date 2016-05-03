@@ -80,11 +80,11 @@ bs <- function(prob, method = c("bs", "ss"), alpha = c(0.01, 0.05), delta = 0.05
   ind1vec = apply(percents, 1, f <- function(x) {
     min(which(x <= delta))
   })
-  ind2vec = apply(percents, 1, f <- function(x) {
-    max(which(x > delta))
-  })
+  #ind2vec = apply(percents, 1, f <- function(x) {
+  #  max(which(x > delta))
+  #})
   w1 = abs(percents[ind1vec] - delta)
-  w2 = abs(percents[ind2vec] - delta)
+  #w2 = abs(percents[ind2vec] - delta)
   # cutoff = (w1* cutoff.list[ind2] + w2* cutoff.list[ind1])/(w1+w2)
 
   cutoff = cutoff.list[ind1vec]
