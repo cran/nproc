@@ -9,7 +9,7 @@ author: "Yang Feng, Jessica Li and Xin Tong"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{nproc demo}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -183,7 +183,7 @@ plot(fit)
 The implementation with linear discriminant analysis is as follows. 
 
 ```{r}
-fit = nproc(x, y, method = "lda", loc.prob.lo = loc.prob, n.cores = 2)
+fit = nproc(x, y, method = "lda", loc.prob.lo = loc.prob)
 plot(fit)
 ```
 

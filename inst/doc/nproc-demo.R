@@ -76,7 +76,7 @@ fit = nproc(x, y, method = "svm", loc.prob.lo = loc.prob)
 plot(fit)
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = "lda", loc.prob.lo = loc.prob, n.cores = 2)
+fit = nproc(x, y, method = "lda", loc.prob.lo = loc.prob)
 plot(fit)
 
 ## ------------------------------------------------------------------------

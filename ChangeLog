@@ -1,3 +1,5 @@
+2016-05-08 Yang Feng <yang.feng@columbia.edu> Version 0.5
+	*change the mc.cores=1 in the Vignettes to be compatible with windows. 
 2016-04-18 Yang Feng <yang.feng@columbia.edu> Version 0.4
 	*change the default alphalist range. 
 2016-03-06 Yang Feng <yang.feng@columbia.edu> Version 0.3

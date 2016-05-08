@@ -48,13 +48,13 @@ Default = NULL.}
 }
 \value{
 An object with S3 class npc.
-\item{fit}{fit the fit from the specified classifier.}
+\item{fit}{the fit from the specified classifier.}
 \item{score}{the score vector for each observation.}
  \item{cutoff}{thecutoff determined via bootstrap to achieve the specified type I error
   control.}
  \item{sign}{whether class 1 has a larger average score than the
   class 0.}
- \item{method}{the method of the classifier.}
+ \item{method}{the classification method.}
  \item{loc.prob}{the
   percentile used to determine the cutoff for the specified type I error
   control.}

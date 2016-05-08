@@ -1,8 +1,8 @@
 Package: nproc
 Type: Package
 Title: Neyman-Pearson Receiver Operator Curve
-Version: 0.4
-Date: 2016-04-17
+Version: 0.5
+Date: 2016-05-08
 Author: Yang Feng, Jessica Li and Xin Tong
 Maintainer: Yang Feng <yang.feng@columbia.edu>
 Imports: glmnet, e1071, randomForest, MASS, parallel, ada, stats,
@@ -13,7 +13,7 @@ LazyData: TRUE
 RoxygenNote: 5.0.1
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
-Packaged: 2016-05-03 04:01:14 UTC; yangfeng
+Packaged: 2016-05-08 14:15:02 UTC; yangfeng
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2016-05-03 08:20:45
+Date/Publication: 2016-05-08 18:18:59

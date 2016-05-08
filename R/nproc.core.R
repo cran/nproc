@@ -1,6 +1,6 @@
 nproc.core <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
                                           "lda", "nb", "ada", "custom"), score = NULL, conf = FALSE,
-                  alphalist = seq(from = 0.01, to = 0.99,by = 0.01), delta = 0.05,
+                  alphalist = seq(from = 0, to = 1,by = 0.01), delta = 0.05,
                   split = TRUE, cv = FALSE, fold = 5, loc.prob = NULL, n.cores = 1) {
   method = match.arg(method)
 

@@ -64,7 +64,7 @@
 
 nproc <- function(x = NULL, y, methods = c("logistic", "penlog", "svm", "randomforest",
                  "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, conf = FALSE,
-                 alphalist = seq(from = 0.01, to = 0.99,by = 0.01), delta = 0.05,
+                 alphalist = seq(from = 0, to = 1,by = 0.01), delta = 0.05,
                  split = 1, cv = FALSE, fold = 5, loc.prob.lo = NULL, loc.prob.up = NULL, n.cores = 1, randSeed = 0) {
   roc.lo = NULL
   roc.up = NULL
