@@ -1,3 +1,18 @@
+2016-05-22 Yang Feng <yang.feng@columbia.edu> Version 1.0
+	*format the codes
+	*implement the adaptive split scheme, by dividing the alphalist into three regions
+	*change the custom method, into using all class 0 samples for determine the cutoff
+	*add options for the split proportion, whether to split adaptively
+	*change plot function to use dashed line if adaptive is TRUE for the small sample
+size region. 
+2016-05-18 Yang Feng <yang.feng@columbia.edu> Version 0.8
+	*try out the implementation with adaptive choice of sample size for the order statistics
+	*change the order statistics selection using the exact formula
+2016-05-14 Yang Feng <yang.feng@columbia.edu> Version 0.7
+	*change the parallel computing schedule to multiple splits
+2016-05-13 Yang Feng <yang.feng@columbia.edu> Version 0.6
+	*change the bootstrap calculation to an explicit formula. The algorithm is more efficient now.
+	*change the starting point of the ROC curve to the alpha value for which it is possible to control the type I error with probability 1-delta
 2016-05-08 Yang Feng <yang.feng@columbia.edu> Version 0.5
 	*change the mc.cores=1 in the Vignettes to be compatible with windows. 
 2016-04-18 Yang Feng <yang.feng@columbia.edu> Version 0.4

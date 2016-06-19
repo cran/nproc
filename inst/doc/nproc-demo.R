@@ -54,10 +54,8 @@ cat('Type I error: ', typeI, '\n')
 ## ------------------------------------------------------------------------
 methodlist = c("logistic", "penlog", "svm", "randomforest",
                                         "lda", "nb", "ada")
-loc.prob = NULL
 for(method in methodlist){
-fit = npc(x, y, method = method, alpha = 0.05, loc.prob = loc.prob)
-loc.prob = fit$loc.prob #Recycle the loc.prob from the fit to same time for the next fit
+fit = npc(x, y, method = method, alpha = 0.05)
 pred = predict(fit,xtest)
 accuracy = mean(pred$pred.label==ytest)
 cat(method, ': Overall Accuracy: ',  accuracy,'\n')
@@ -68,15 +66,14 @@ cat(method, ': Type I error: ', typeI, '\n')
 
 
 ## ------------------------------------------------------------------------
-fit2 = npc(y = y, score = fit.score$pred.score,
-pred.score = pred$pred.score, loc.prob = loc.prob, method = 'custom')
+fit2 = npc(y = y, score = pred$pred.score, pred.score = pred$pred.score, method = 'custom')
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = "svm", loc.prob.lo = loc.prob)
+fit = nproc(x, y, method = "svm")
 plot(fit)
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = "lda", loc.prob.lo = loc.prob)
+fit = nproc(x, y, method = "lda")
 plot(fit)
 
 ## ------------------------------------------------------------------------
@@ -84,6 +81,6 @@ fit = nproc(x, y, method = "logistic", conf = TRUE)
 plot(fit)
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = c('svm','logistic','lda'), conf = T)
+fit = nproc(x, y, method = c('svm','lda'), conf = T)
 plot(fit)
 

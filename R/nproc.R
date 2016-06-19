@@ -5,7 +5,7 @@
 #' @export
 #' @param x n * p observation matrix. n observations, p covariates.
 #' @param y n 0/1 observatons.
-#' @param methods classification method(s).
+#' @param method classification method(s).
 #' \itemize{
 #' \item logistic: \link{glm} function with family = 'binomial'
 #' \item penlog: \code{\link[glmnet]{glmnet}} in \code{glmnet} package
@@ -23,24 +23,32 @@
 #' @param delta the violation rate of the type I error. Default = 0.05.
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
 #' version, choose split > 1.  When method = 'custom',  split = 0 always.
+#' version, choose split > 1.  When method = 'custom',  split = 0 always.
+#' @param split.ratio the ratio of splits used for the class 0 sample to train the
+#' classifier. Default = 0.5.
+#' @param n01.min the minimum number of class 0 observations used for training classifier. Default = 10.
+#' @param adaptive whether to adaptively choose the number of observations used for
+#' determining the cutoff when 1/2 n0 < lower bound < n0. Default = F.
 #' @param cv whether cross-validation is performed for calculating the roc curve.
 #' @param fold number of folds for the cross-validation. Default = 5.
-#' @param loc.prob.lo the precalculated lower threshold locations in probability. Default = NULL.
-#' @param loc.prob.up the precalculated upper threshold locations in probability. Default = NULL.
 #' @param n.cores number of cores used for parallel computing. Default = 1.
 #' @param randSeed the random seed used in the algorithm.
 #' @seealso \code{\link{npc}}
 #' @examples
-#' n = 1000
+#' n = 200
 #' x = matrix(rnorm(n*2),n,2)
 #' c = 1+3*x[,1]
 #' y = rbinom(n,1,1/(1+exp(-c)))
 #' #fit = nproc(x, y, method = 'svm')
-#' #fit2 = nproc(x, y, method = 'svm', cv = TRUE)
-#' fit3 = nproc(x, y, method = 'penlog')
+#' fit2 = nproc(x, y, method = 'penlog')
+#'
+#' ##Plot the nproc curve
+#' plot(fit2)
+#' fit3 = nproc(x, y, method = 'penlog', adaptive = TRUE)
 #'
 #' ##Plot the nproc curve
 #' plot(fit3)
+#'
 #' #fit3 = nproc(x, y, method = 'penlog',  n.cores = 2)
 #' #In practice, replace 2 by the number of cores available 'detectCores()'
 #' #fit4 = nproc(x, y, method = 'penlog', n.cores = detectCores())
@@ -62,38 +70,37 @@
 
 
 
-nproc <- function(x = NULL, y, methods = c("logistic", "penlog", "svm", "randomforest",
-                 "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, conf = FALSE,
-                 alphalist = seq(from = 0, to = 1,by = 0.01), delta = 0.05,
-                 split = 1, cv = FALSE, fold = 5, loc.prob.lo = NULL, loc.prob.up = NULL, n.cores = 1, randSeed = 0) {
-  roc.lo = NULL
-  roc.up = NULL
-  methods = match.arg(methods, several.ok = TRUE)
-  set.seed(randSeed)
-  for(method in methods){
-  alphalist = alphalist[alphalist >= 0 & alphalist <= 1]
-  if (!conf) {
-  v1 = nproc.core(x = x, y = y, method = method, score = score,
-                 alphalist = alphalist, delta = delta,
-                 split = split, cv = cv, fold = fold, loc.prob = loc.prob.lo, n.cores = n.cores)
-  roc.lo = cbind(roc.lo,v1$v)
-  loc.prob.lo = v1$loc.prob
-  } else{
-    v1 = nproc.core(x = x, y = y, method = method, score = score,
-                   alphalist = alphalist, delta = delta/2,
-                   split = split, cv = cv, fold = fold, loc.prob = loc.prob.lo, n.cores = n.cores)
-    v2 = nproc.core(x = x, y = y, method = method, score = score,
-                   alphalist = alphalist, delta = 1-delta/2,
-                   split = split, cv = cv, fold = fold, loc.prob = loc.prob.up, n.cores = n.cores)
-    roc.lo = cbind(roc.lo,v1$v)
-    roc.up = cbind(roc.up,v2$v)
-    loc.prob.lo = v1$loc.prob
-    loc.prob.up = v2$loc.prob
-  }
-  }
+nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
+    "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, conf = FALSE, alphalist = seq(from = 0.01,
+    to = 0.99, by = 0.01), delta = 0.05, split = 1, split.ratio = 0.5, n01.min = 10, adaptive = FALSE, cv = FALSE, fold = 5, n.cores = 1, randSeed = 0) {
+    roc.lo = NULL
+    roc.up = NULL
+    method = match.arg(method, several.ok = TRUE)
+    set.seed(randSeed)
+    for (mtod in method) {
+        alphalist = alphalist[alphalist > 0 & alphalist < 1]
 
-  object = list(roc.lo = roc.lo, roc.up = roc.up, conf = conf, methods = methods, loc.prob.lo = loc.prob.lo, loc.prob.up = loc.prob.up, alphalist = alphalist, delta = delta)
+        if (!conf) {
+                v1 = nproc.core(x = x, y = y, method = mtod, score = score, alphalist = alphalist,
+                  delta = delta, split = split, split.ratio = split.ratio, n01.min = n01.min, adaptive = adaptive, cv = cv, fold = fold,
+                  n.cores = n.cores)
+                roc.lo = cbind(roc.lo, v1$v)
 
-  class(object) = "nproc"
-  return(object)
+        } else {
+            v1 = nproc.core(x = x, y = y, method = mtod, score = score, alphalist = alphalist,
+                delta = delta/2, split = split, split.ratio = split.ratio, n01.min = n01.min, adaptive = adaptive, cv = cv, fold = fold,
+                n.cores = n.cores)
+            v2 = nproc.core(x = x, y = y, method = mtod, score = score, alphalist = alphalist,
+                delta = 1 - delta/2, split = split, split.ratio = split.ratio, n01.min = n01.min, adaptive = adaptive, cv = cv,
+                fold = fold, n.cores = n.cores)
+            roc.lo = cbind(roc.lo, v1$v)
+            roc.up = cbind(roc.up, v2$v)
+        }
+    }
+
+    object = list(roc.lo = roc.lo, roc.up = roc.up, conf = conf, method = method,
+        alphalist = alphalist, delta = delta, cat = v1$cat, adaptive = adaptive)
+
+    class(object) = "nproc"
+    return(object)
 }

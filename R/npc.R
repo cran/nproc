@@ -1,7 +1,7 @@
 #' Calculate the Neyman-Pearson Classifier from a sample of class 0 and class 1.
 #'
-#' \code{npc} calculate the Neyman-Pearson Classifier for a given type I error
-#' constraint.
+#' Give a type I error upper bound alpha and the violation upper bound delta, \code{npc} calculate the Neyman-Pearson Classifier
+#' which control the type I error with in alpha with probability at least 1-delta
 #' @export
 #' @importFrom e1071 svm
 #' @importFrom e1071 naiveBayes
@@ -10,10 +10,12 @@
 #' @importFrom randomForest randomForest
 #' @importFrom ada ada
 #' @importFrom parallel mcmapply
+#' @importFrom parallel mclapply
 #' @importFrom graphics plot
 #' @importFrom stats approx
 #' @importFrom stats glm
 #' @importFrom stats predict
+#' @importFrom stats pbinom
 #' @param x n * p observation matrix. n observations, p covariates.
 #' @param y n 0/1 observatons.
 #' @param method classification method.
@@ -34,9 +36,13 @@
 #' @param delta the violation rate of the type I error. Default = 0.05.
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
 #' version, choose split > 1.  When method = 'custom',  split = 0 always.
-#' @param loc.prob the precalculated threshold locations in probability.
-#'   Default = NULL.
-#' @param n.cores number of cores used for parallel computing. Default = 1.
+#' @param split.ratio the ratio of splits used for the class 0 sample to train the
+#' classifier. Default = 0.5.
+#' @param n01.min the minimum number of class 0 observations used for training classifier. Default = 10.
+#' @param adaptive whether to adaptively choose the number of observations used for
+#' determining the cutoff when 1/2 n0 < lower bound < n0. Default = F.
+#' @param n.cores number of cores used for parallel computing. Default = 1. WARNING:
+#' windows machine is not supported.
 #' @param randSeed the random seed used in the algorithm.
 #' @return An object with S3 class npc.
 #' \item{fit}{the fit from the specified classifier.}
@@ -49,6 +55,9 @@
 #'  \item{loc.prob}{the
 #'   percentile used to determine the cutoff for the specified type I error
 #'   control.}
+#'   \item{split}{the number of splits used.}
+#'   \item{n0toosmall}{whether the class 0 sample size is too small for the desirable type
+#'   I error control}
 #' @seealso \code{\link{nproc}} and \code{\link{predict.npc}}
 #' @examples
 #' set.seed(0)
@@ -71,133 +80,110 @@
 #' cat('Type I error: ', typeI, '\n')
 #'
 #' ##Ensembled svm classifier with split = 11,  alpha=0.05
-#' #fit = npc(x, y, method = 'svm', split = 11)
-#' #pred = predict(fit,xtest)
-#' #fit.score = predict(fit,x)
-#' #accuracy = mean(pred$pred.label==ytest)
-#' #cat('Overall Accuracy: ',  accuracy,'\n')
-#' #ind0 = which(ytest==0)
-#' #typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#' #cat('Type I error: ', typeI, '\n')
+#' fit = npc(x, y, method = 'svm', split = 11)
+#' pred = predict(fit,xtest)
+#' accuracy = mean(pred$pred.label==ytest)
+#' cat('Overall Accuracy: ',  accuracy,'\n')
+#' ind0 = which(ytest==0)
+#' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#' cat('Type I error: ', typeI, '\n')
 #'
 #' ##Now, change the method to logistic regression and change alpha to 0.1
-#' #fit = npc(x, y, method = 'logistic', alpha = 0.1)
-#' #pred = predict(fit,xtest)
-#' #accuracy = mean(pred$pred.label==ytest)
-#' #cat('Overall Accuracy: ',  accuracy,'\n')
-#' #ind0 = which(ytest==0)
-#' #typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#' #cat('Type I error: ', typeI, '\n')
+#' fit = npc(x, y, method = 'logistic', alpha = 0.1)
+#' pred = predict(fit,xtest)
+#' accuracy = mean(pred$pred.label==ytest)
+#' cat('Overall Accuracy: ',  accuracy,'\n')
+#' ind0 = which(ytest==0)
+#' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#' cat('Type I error: ', typeI, '\n')
 #'
 #' ##Now, change the method to adaboost
-#' #fit = npc(x, y, method = 'ada', alpha = 0.1)
-#' #pred = predict(fit,xtest)
-#' #accuracy = mean(pred$pred.label==ytest)
-#' #cat('Overall Accuracy: ',  accuracy,'\n')
-#' #ind0 = which(ytest==0)
-#' #typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#' #cat('Type I error: ', typeI, '\n')
+#' fit = npc(x, y, method = 'ada', alpha = 0.1)
+#' pred = predict(fit,xtest)
+#' accuracy = mean(pred$pred.label==ytest)
+#' cat('Overall Accuracy: ',  accuracy,'\n')
+#' ind0 = which(ytest==0)
+#' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#' cat('Type I error: ', typeI, '\n')
 #'
 #' ##A 'custom' npc classifier with y and score.
-#' #fit2 = npc(y = y, score = fit.score$pred.score,
-#' #pred.score = pred$pred.score, method = 'custom')
+#' fit2 = npc(y = y, score = fit.score$pred.score,
+#' pred.score = pred$pred.score, method = 'custom')
 
 npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-                "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, pred.score = NULL,
-                alpha = 0.05, delta = 0.05, split = 1, loc.prob = NULL,
-                n.cores = 1, randSeed = 0) {
-  method = match.arg(method)
-  set.seed(randSeed)
-  if (method == "custom" & is.null(score)) {
-    stop("score is needed when specifying method = \"custom\"")
-  }
-  if (!is.null(score)) { ##custom method, user specifed score vector
-    test.score = score
-    test.y = y
-    pred.score = pred.score
-    obj = npc.core(test.y, test.score, pred.score = pred.score, alpha = alpha, delta = delta,
-                   loc.prob = loc.prob, n.cores = n.cores)
-    object = list(pred.y = obj$pred.y, y = test.y, score = test.score,
-                  cutoff = obj$cutoff, sign = obj$sign, method = method, loc.prob = loc.prob)
-    class(object) = "npc"
-    return(object)
-   } else {
-    n = nrow(x)
-    p = ncol(x)
-    ind0 = which(y == 0)  ##indices for class 0
-    ind1 = which(y == 1)  ##indices for class 1
-    n0 = length(ind0)
-    n1 = length(ind1)
-    object.all = NULL
-      for(i in 1:max(1,split)){
-        if(split==0){
-          ind01 = ind0
-          ind02 = ind0
-        } else {
-          ind01 = sample(ind0, round(n0)/2)  ##use for train classifer
-          ind02 = setdiff(ind0, ind01)  ##use for determine cutoff
-        }
-        train.ind = c(ind01, ind1)
-        test.ind = c(ind02, ind1)
-        train.x = as.matrix(x[train.ind, ])
-        train.y = y[train.ind]
-        test.x = as.matrix(x[test.ind, ])
-        test.y = y[test.ind]
-        colnames(train.x) = paste("x", 1:p, sep = "")
-        colnames(test.x) = paste("x", 1:p, sep = "")
-        if (method == "logistic") {
-          train.data = data.frame(train.x, y = train.y)
-          fit = glm(y ~ ., data = train.data, family = "binomial")
-          test.score = predict(fit, data.frame(test.x), type = "response")
-        } else if (method == "penlog") {
-          fit = cv.glmnet(train.x, train.y, family = "binomial")
-          test.score = predict(fit$glmnet.fit, newx = test.x, type = "response",
-                               s = fit$lambda.min)
-          test.score = as.vector(test.score)
-
-        } else if (method == "svm") {
-          train.y = as.factor(train.y)
-          fit = svm(train.x, train.y, kernel = kernel)
-          test.score = attr(predict(fit, test.x, decision.values = TRUE), "decision.values")[,
-                                                                                             1]
-        } else if (method == "randomforest") {
-          train.y = as.factor(train.y)
-          fit = randomForest(train.x, train.y)
-          test.score = predict(fit, test.x, type = "prob")[, 2]
-        } else if (method == "lda") {
-          fit = lda(train.x, train.y)
-          test.score = predict(fit, data.frame(test.x))$posterior[, 2]
-        } else if (method == "nb") {
-          fit = naiveBayes(train.x, train.y)
-          test.score = predict(fit, data.frame(test.x), type = "raw")[, 2]
-        } else if (method == "ada") {
-          train.data = data.frame(train.x, y = train.y)
-          fit = ada(y~., data=train.data)
-          test.score = predict(fit, data.frame(test.x), type = "probs")[, 2]
-        }
-
-
-
-
-      obj = npc.core(test.y, test.score, pred.score = pred.score, alpha = alpha, delta = delta,
-                     loc.prob = loc.prob, n.cores = n.cores)
-      if (is.null(loc.prob)){
-        loc.prob = obj$loc.prob
-      }
-      object = list(fit = fit, pred.y = obj$pred.y, y = test.y, score = test.score,
-                    cutoff = obj$cutoff, sign = obj$sign, method = method, loc.prob = loc.prob)
-      object.all[[i]] = object
-      }
-      if(split>1){
-      class(object.all) = "npc"
-      object.all$split = split
-      object.all$method = method
-      return(object.all)
-      } else{
+    "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, pred.score = NULL,
+    alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5, n01.min = 10, adaptive = FALSE, n.cores = 1, randSeed = 0) {
+    method = match.arg(method)
+    set.seed(randSeed)
+    if (method == "custom" & is.null(score)) {
+        stop("score is needed when specifying method = \"custom\"")
+    }
+    if (!is.null(score)) {
+        ## custom method, user specifed score vector
+        test.score = score
+        test.y = y
+        pred.score = pred.score
+        obj = npc.core(test.y, test.score, pred.score = pred.score, alpha = alpha,
+            delta = delta)
+        object = list(pred.y = obj$pred.y, y = test.y, score = test.score, cutoff = obj$cutoff,
+            sign = obj$sign, method = method)
         class(object) = "npc"
-        object$split = split
+        object$n0toosmall = 'FALSE'
         return(object)
-      }
+    } else { ##not custom method
+        object = NULL
+        n = nrow(x)
+        p = ncol(x)
+        ind0 = which(y == 0)  ##indices for class 0
+        ind1 = which(y == 1)  ##indices for class 1
+        n0 = length(ind0)
+
+        n02.min = ceiling(log(delta)/log(1-min(alpha)))
+        if(n0 < n01.min * (split>0) + n02.min) { ##too few class 0 obs, note the
+          ##difference when split=0 and >0
+          object$n0toosmall = TRUE
+          warning('too few class 0 observations to ensure a type I error control.')
+          class(object) = 'npc'
+          return(object)
+        } else if(split == 0){ ##no split, use all class 0 obs for training and for calculating the cutoff
+            object = npc.split(x, y, p, kernel, alpha, delta, ind0, ind0, ind1, method,
+                pred.score)
+        } else { ##with split
+
+            if(adaptive == F){
+              n0.1 = round(n0*split.ratio) ##default size for calculating the classifier
+              if(n0 < n0.1+n02.min){
+              object$n0toosmall = TRUE
+              warning('too few class 0 observations to ensure a type I error control.')
+              class(object) = 'npc'
+              object$n0toosmall = 'TRUE'
+              return(object)
+            } else{
+              ind01.mat = sapply(1:split, f <- function(i) {
+                sample(ind0, n0.1)
+            })
+            }
+            }else {
+              ind01.mat = sapply(1:split, f <- function(i) {
+                sample(ind0, n0-n02.min)
+              })
+            }
+
+
+            ind02.mat = sapply(1:split, f <- function(i) {
+                setdiff(ind0, ind01.mat[, i])
+            })
+            object = mclapply(1:split, f <- function(i) {
+                npc.split(x, y, p, kernel, alpha, delta, ind01.mat[, i], ind02.mat[,
+                  i], ind1, method, pred.score)
+            }, mc.cores = n.cores)
+        }
+        object$split = split
+        object$method = method
+        class(object) = "npc"
+        object$n0toosmall = 'FALSE'
+        return(object)
+
     }
 
 

@@ -148,10 +148,8 @@ Let's see the performance of this dataset using all implemented methods as a com
 ```{r}
 methodlist = c("logistic", "penlog", "svm", "randomforest",
                                         "lda", "nb", "ada")
-loc.prob = NULL
 for(method in methodlist){
-fit = npc(x, y, method = method, alpha = 0.05, loc.prob = loc.prob)
-loc.prob = fit$loc.prob #Recycle the loc.prob from the fit to same time for the next fit
+fit = npc(x, y, method = method, alpha = 0.05)
 pred = predict(fit,xtest)
 accuracy = mean(pred$pred.label==ytest)
 cat(method, ': Overall Accuracy: ',  accuracy,'\n')
@@ -165,8 +163,7 @@ cat(method, ': Type I error: ', typeI, '\n')
 The package also implmented a generic classifier with the scores on each observation needed. An example is follows. 
 
 ```{r}
-fit2 = npc(y = y, score = fit.score$pred.score,
-pred.score = pred$pred.score, loc.prob = loc.prob, method = 'custom')
+fit2 = npc(y = y, score = pred$pred.score, pred.score = pred$pred.score, method = 'custom')
 ```
 [Back to Top](#top)
 <a id="nproc"></a>
@@ -176,14 +173,14 @@ pred.score = pred$pred.score, loc.prob = loc.prob, method = 'custom')
 The package provides an implmentation of Neyman-Pearson Receiver Operator Curve (nproc) via the function `nproc`. Here is a brief demo. We use the same data in the NP classifier, i.e., a dataset (x,y) from a logistic regression model with 2 features and sample size 1000. Then, we can call the `nproc` function with a specificed classifier. 
 
 ```{r}
-fit = nproc(x, y, method = "svm", loc.prob.lo = loc.prob)
+fit = nproc(x, y, method = "svm")
 plot(fit)
 ```
 
 The implementation with linear discriminant analysis is as follows. 
 
 ```{r}
-fit = nproc(x, y, method = "lda", loc.prob.lo = loc.prob)
+fit = nproc(x, y, method = "lda")
 plot(fit)
 ```
 
@@ -197,7 +194,7 @@ plot(fit)
 The package provides efficient computation of NP ROC curves using several different classifiers. The following compares SVM, logistic regression and linear discriminant analysis with the 95% point-wise confidence interval. It is clear from the graph that logistic regression and linear discriminant analysis perform similarly and are better than SVM. 
 
 ```{r}
-fit = nproc(x, y, method = c('svm','logistic','lda'), conf = T)
+fit = nproc(x, y, method = c('svm','lda'), conf = T)
 plot(fit)
 ```
 
