@@ -2,7 +2,7 @@
 % Please edit documentation in R/nproc.R
 \name{nproc}
 \alias{nproc}
-\title{Calculate the Neyman-Pearson ROC}
+\title{Calculate the Neyman-Pearson Receiver Operating Characteristics}
 \usage{
 nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
   "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL,
@@ -17,13 +17,13 @@ nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 
 \item{method}{classification method(s).
 \itemize{
-\item logistic: \link{glm} function with family = 'binomial'
-\item penlog: \code{\link[glmnet]{glmnet}} in \code{glmnet} package
-\item svm: \code{\link[e1071]{svm}} in \code{e1071} package
-\item randomforest: \code{\link[randomForest]{randomForest}} in \code{randomForest} package
-\item lda: \code{\link[MASS]{lda}} in \code{MASS} package
-\item nb: \code{\link[e1071]{naiveBayes}} in \code{e1071} package
-\item ada: \code{\link[ada]{ada}} in \code{ada} package
+\item logistic: Logistic regression. \link{glm} function with family = 'binomial'
+\item penlog: Penalized logistic regression with LASSO penalty. \code{\link[glmnet]{glmnet}} in \code{glmnet} package
+\item svm: Support Vector Machines. \code{\link[e1071]{svm}} in \code{e1071} package
+\item randomforest: Random Forest. \code{\link[randomForest]{randomForest}} in \code{randomForest} package
+\item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
+\item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
+\item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 \item custom: a custom classifier. score vector needed.
 }}
 
@@ -58,7 +58,7 @@ determining the cutoff when 1/2 n0 < lower bound < n0. Default = F.}
 \item{randSeed}{the random seed used in the algorithm.}
 }
 \description{
-\code{nproc} calculate the Neyman-Pearson ROC
+\code{nproc} calculate the Neyman-Pearson Receiver Operating Characteristics
 curve for a given sequence of type I error values.
 }
 \examples{
@@ -93,6 +93,9 @@ plot(fit3)
 
 #nproc ensembled version
 #fit7 = nproc(x, y, method = 'lda', split = 21)
+}
+\references{
+Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109
 }
 \seealso{
 \code{\link{npc}}

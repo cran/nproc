@@ -20,13 +20,13 @@
 #' @param y n 0/1 observatons.
 #' @param method classification method.
 #' \itemize{
-#' \item logistic: \link{glm} function with family = 'binomial'
-#' \item penlog: \code{\link[glmnet]{glmnet}} in \code{glmnet} package
-#' \item svm: \code{\link[e1071]{svm}} in \code{e1071} package
-#' \item randomforest: \code{\link[randomForest]{randomForest}} in \code{randomForest} package
-#' \item lda: \code{\link[MASS]{lda}} in \code{MASS} package
-#' \item nb: \code{\link[e1071]{naiveBayes}} in \code{e1071} package
-#' \item ada: \code{\link[ada]{ada}} in \code{ada} package
+#' \item logistic: Logistic regression. \link{glm} function with family = 'binomial'
+#' \item penlog: Penalized logistic regression with LASSO penalty. \code{\link[glmnet]{glmnet}} in \code{glmnet} package
+#' \item svm: Support Vector Machines. \code{\link[e1071]{svm}} in \code{e1071} package
+#' \item randomforest: Random Forest. \code{\link[randomForest]{randomForest}} in \code{randomForest} package
+#' \item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
+#' \item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
+#' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 #' \item custom: a custom classifier. score vector needed.
 #' }
 #' @param kernel kernel used in the svm method. Default = 'radial'.
@@ -59,6 +59,8 @@
 #'   \item{n0toosmall}{whether the class 0 sample size is too small for the desirable type
 #'   I error control}
 #' @seealso \code{\link{nproc}} and \code{\link{predict.npc}}
+#' @references
+#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109.
 #' @examples
 #' set.seed(0)
 #' n = 1000
