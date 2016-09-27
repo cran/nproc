@@ -4,10 +4,12 @@
 \alias{plot.nproc}
 \title{Plot the nproc curve(s).}
 \usage{
-\method{plot}{nproc}(x, ...)
+\method{plot}{nproc}(x, col = "black", ...)
 }
 \arguments{
 \item{x}{fitted nproc object using \code{nproc}.}
+
+\item{col}{color of the plots.}
 
 \item{...}{additional arguments.}
 }
@@ -21,13 +23,8 @@ c = 1+3*x[,1]
 y = rbinom(n,1,1/(1+exp(-c)))
 fit = nproc(x, y, method = 'svm')
 plot(fit)
-#fit = nproc(x, y, method = c('svm','logistic'))
-#plot(fit)
-##Compare Confidence Curves
-#fit = nproc(x, y, method = c('svm','logistic','lda'), conf = TRUE)
-#plot(fit)
 }
 \seealso{
-\code{\link{npc}} and \code{\link{nproc}}
+\code{\link{npc}}, \code{\link{nproc}}
 }
 

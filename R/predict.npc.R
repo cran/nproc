@@ -32,20 +32,15 @@
 #' #cat('Type II error: ', typeII, '\n')
 
 predict.npc <- function(object, newx = NULL, pred.score = NULL, ...) {
-    if (object$n0toosmall == 'TRUE'){
-      warning('too few class 0 observations to ensure a type I error control.')
-     return()
-    }
-    if (object$method == "custom") {
+      if (object$method == "custom") {
         if (is.null(pred.score)) {
             stop("pred.score needed for method \"custom\".")
         }
         pred.score = pred.score
-        if (object$sign == TRUE) {
-            pred.label = outer(pred.score, object$cutoff, ">")
-        } else {
-            pred.label = outer(pred.score, object$cutoff, "<=")
+        if (object$sign == FALSE) {
+          pred.score = - pred.score
         }
+        pred.label = outer(pred.score, object$cutoff, ">")
     } else {
         colnames(newx) <- paste("x", 1:ncol(newx), sep = "")
         if (object$split < 1) {
@@ -53,13 +48,13 @@ predict.npc <- function(object, newx = NULL, pred.score = NULL, ...) {
             pred.score = pred$pred.score
             pred.label = pred$pred.label
         } else {
-            pred = pred.npc.core(object[[1]], newx)
+            pred = pred.npc.core(object$fits[[1]], newx)
             pred.score = pred$pred.score
             pred.label = pred$pred.label
 
             if (object$split > 1) {
                 for (i in 2:object$split) {
-                  pred = pred.npc.core(object[[i]], newx)
+                  pred = pred.npc.core(object$fits[[i]], newx)
 
                   pred.label = pred.label + pred$pred.label
                   pred.score = pred.score + pred$pred.score

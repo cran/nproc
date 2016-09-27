@@ -6,9 +6,8 @@
 \usage{
 nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
   "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL,
-  conf = FALSE, alphalist = seq(from = 0.01, to = 0.99, by = 0.01),
-  delta = 0.05, split = 1, split.ratio = 0.5, n01.min = 10,
-  adaptive = FALSE, cv = FALSE, fold = 5, n.cores = 1, randSeed = 0)
+  pred.score = NULL, band = FALSE, typeI.lower = FALSE, delta = 0.05,
+  split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -31,31 +30,34 @@ nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 
 \item{score}{score vector corresponding to y. Required when method  = 'custom'.}
 
-\item{conf}{whether to generate two np roc curves representing a confidence band with prob 1-delta.}
+\item{pred.score}{score vector corresponding to the test y. Required when method  = 'custom'.}
 
-\item{alphalist}{the sequence of type I error values. Default = seq(from=0,to=1,by=0.01).}
+\item{band}{whether to generate two np roc curves representing a confidence band. Default = FALSE.}
+
+\item{typeI.lower}{whether to generate the data-driven type-I error lower bound. Default = FALSE.}
 
 \item{delta}{the violation rate of the type I error. Default = 0.05.}
 
 \item{split}{the number of splits for the class 0 sample. Default = 1. For ensemble
-version, choose split > 1.  When method = 'custom',  split = 0 always.
 version, choose split > 1.  When method = 'custom',  split = 0 always.}
 
 \item{split.ratio}{the ratio of splits used for the class 0 sample to train the
 classifier. Default = 0.5.}
 
-\item{n01.min}{the minimum number of class 0 observations used for training classifier. Default = 10.}
-
-\item{adaptive}{whether to adaptively choose the number of observations used for
-determining the cutoff when 1/2 n0 < lower bound < n0. Default = F.}
-
-\item{cv}{whether cross-validation is performed for calculating the roc curve.}
-
-\item{fold}{number of folds for the cross-validation. Default = 5.}
-
 \item{n.cores}{number of cores used for parallel computing. Default = 1.}
 
 \item{randSeed}{the random seed used in the algorithm.}
+}
+\value{
+An object with S3 class nproc.
+\item{typeI.u}{sequence of upper bound of type I error.}
+\item{typeII.l}{sequence of lower bound of type I error.}
+\item{typeII.u}{sequence of upper bound of type II error.}
+\item{auc.l}{the auc value of the lower NP-ROC curve.}
+\item{auc.u}{the auc value of the upper NP-ROC curve.}
+\item{band}{whether the upper NP-ROC curve is generated.}
+\item{method}{the classification method implemented.}
+\item{delta}{the violation rate.}
 }
 \description{
 \code{nproc} calculate the Neyman-Pearson Receiver Operating Characteristics
@@ -64,17 +66,17 @@ curve for a given sequence of type I error values.
 \examples{
 n = 200
 x = matrix(rnorm(n*2),n,2)
-c = 1+3*x[,1]
+c = 1 - 3*x[,1]
 y = rbinom(n,1,1/(1+exp(-c)))
 #fit = nproc(x, y, method = 'svm')
 fit2 = nproc(x, y, method = 'penlog')
 
 ##Plot the nproc curve
 plot(fit2)
-fit3 = nproc(x, y, method = 'penlog', adaptive = TRUE)
+#fit3 = nproc(x, y, method = 'penlog')
 
 ##Plot the nproc curve
-plot(fit3)
+#plot(fit3)
 
 #fit3 = nproc(x, y, method = 'penlog',  n.cores = 2)
 #In practice, replace 2 by the number of cores available 'detectCores()'
@@ -85,14 +87,11 @@ plot(fit3)
 #obj = nproc(x = NULL, y = fit$y, method = 'custom', split = 0,
 #score = fit$score,  n.cores = 2)
 
-#Compared different classifiers via nproc
-#fit5 = nproc(x, y, method = c('lda','ada','randomforest'),  n.cores = detectCores())
-
 #Confidence nproc curves
-#fit6 = nproc(x, y, method = 'lda', conf = TRUE)
+#fit6 = nproc(x, y, method = 'lda', band = TRUE)
 
 #nproc ensembled version
-#fit7 = nproc(x, y, method = 'lda', split = 21)
+#fit7 = nproc(x, y, method = 'lda', split = 11)
 }
 \references{
 Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109

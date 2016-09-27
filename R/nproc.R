@@ -18,38 +18,42 @@
 #' }
 #' @param kernel kernel used in the svm method. Default = 'radial'.
 #' @param score score vector corresponding to y. Required when method  = 'custom'.
-#' @param conf whether to generate two np roc curves representing a confidence band with prob 1-delta.
-#' @param alphalist the sequence of type I error values. Default = seq(from=0,to=1,by=0.01).
+#' @param pred.score score vector corresponding to the test y. Required when method  = 'custom'.
+#' @param band whether to generate two np roc curves representing a confidence band. Default = FALSE.
+#' @param typeI.lower whether to generate the data-driven type-I error lower bound. Default = FALSE.
 #' @param delta the violation rate of the type I error. Default = 0.05.
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
 #' version, choose split > 1.  When method = 'custom',  split = 0 always.
-#' version, choose split > 1.  When method = 'custom',  split = 0 always.
 #' @param split.ratio the ratio of splits used for the class 0 sample to train the
 #' classifier. Default = 0.5.
-#' @param n01.min the minimum number of class 0 observations used for training classifier. Default = 10.
-#' @param adaptive whether to adaptively choose the number of observations used for
-#' determining the cutoff when 1/2 n0 < lower bound < n0. Default = F.
-#' @param cv whether cross-validation is performed for calculating the roc curve.
-#' @param fold number of folds for the cross-validation. Default = 5.
 #' @param n.cores number of cores used for parallel computing. Default = 1.
 #' @param randSeed the random seed used in the algorithm.
+#' @return An object with S3 class nproc.
+#' \item{typeI.u}{sequence of upper bound of type I error.}
+#' \item{typeII.l}{sequence of lower bound of type I error.}
+#' \item{typeII.u}{sequence of upper bound of type II error.}
+#' \item{auc.l}{the auc value of the lower NP-ROC curve.}
+#' \item{auc.u}{the auc value of the upper NP-ROC curve.}
+#' \item{band}{whether the upper NP-ROC curve is generated.}
+#' \item{method}{the classification method implemented.}
+#' \item{delta}{the violation rate.}
 #' @seealso \code{\link{npc}}
 #' @references
 #' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109
 #' @examples
 #' n = 200
 #' x = matrix(rnorm(n*2),n,2)
-#' c = 1+3*x[,1]
+#' c = 1 - 3*x[,1]
 #' y = rbinom(n,1,1/(1+exp(-c)))
 #' #fit = nproc(x, y, method = 'svm')
 #' fit2 = nproc(x, y, method = 'penlog')
 #'
 #' ##Plot the nproc curve
 #' plot(fit2)
-#' fit3 = nproc(x, y, method = 'penlog', adaptive = TRUE)
+#' #fit3 = nproc(x, y, method = 'penlog')
 #'
 #' ##Plot the nproc curve
-#' plot(fit3)
+#' #plot(fit3)
 #'
 #' #fit3 = nproc(x, y, method = 'penlog',  n.cores = 2)
 #' #In practice, replace 2 by the number of cores available 'detectCores()'
@@ -60,49 +64,61 @@
 #' #obj = nproc(x = NULL, y = fit$y, method = 'custom', split = 0,
 #' #score = fit$score,  n.cores = 2)
 #'
-#' #Compared different classifiers via nproc
-#' #fit5 = nproc(x, y, method = c('lda','ada','randomforest'),  n.cores = detectCores())
-#'
 #' #Confidence nproc curves
-#' #fit6 = nproc(x, y, method = 'lda', conf = TRUE)
+#' #fit6 = nproc(x, y, method = 'lda', band = TRUE)
 #'
 #' #nproc ensembled version
-#' #fit7 = nproc(x, y, method = 'lda', split = 21)
+#' #fit7 = nproc(x, y, method = 'lda', split = 11)
 
 
 
 
-nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-    "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, conf = FALSE, alphalist = seq(from = 0.01,
-    to = 0.99, by = 0.01), delta = 0.05, split = 1, split.ratio = 0.5, n01.min = 10, adaptive = FALSE, cv = FALSE, fold = 5, n.cores = 1, randSeed = 0) {
-    roc.lo = NULL
-    roc.up = NULL
-    method = match.arg(method, several.ok = TRUE)
+nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "ada",
+    "custom"), kernel = "radial", score = NULL, pred.score = NULL, band = FALSE, typeI.lower = FALSE, delta = 0.05, split = 1,
+    split.ratio = 0.5, n.cores = 1, randSeed = 0) {
+    if (!is.null(x)) {
+        x = as.matrix(x)
+    }
+    p = ncol(x)
+    if (p == 1 & method == "penlog") {
+        stop("glmnet does not support the one predictor case. ")
+    }
+    method = match.arg(method)
     set.seed(randSeed)
-    for (mtod in method) {
-        alphalist = alphalist[alphalist > 0 & alphalist < 1]
+    v = npc(x, y, method = method, band = band, kernel = kernel, score = score, pred.score = pred.score, delta = delta, split = split, split.ratio = split.ratio, n.cores = n.cores, randSeed = randSeed)
 
-        if (!conf) {
-                v1 = nproc.core(x = x, y = y, method = mtod, score = score, alphalist = alphalist,
-                  delta = delta, split = split, split.ratio = split.ratio, n01.min = n01.min, adaptive = adaptive, cv = cv, fold = fold,
-                  n.cores = n.cores)
-                roc.lo = cbind(roc.lo, v1$v)
+    split = v$split
+    alphalist = seq(from = 0, to = 1, by = 0.001)
+    n.alpha = length(alphalist)
+    beta.u = beta.l = matrix(0,n.alpha,split)
 
-        } else {
-            v1 = nproc.core(x = x, y = y, method = mtod, score = score, alphalist = alphalist,
-                delta = delta/2, split = split, split.ratio = split.ratio, n01.min = n01.min, adaptive = adaptive, cv = cv, fold = fold,
-                n.cores = n.cores)
-            v2 = nproc.core(x = x, y = y, method = mtod, score = score, alphalist = alphalist,
-                delta = 1 - delta/2, split = split, split.ratio = split.ratio, n01.min = n01.min, adaptive = adaptive, cv = cv,
-                fold = fold, n.cores = n.cores)
-            roc.lo = cbind(roc.lo, v1$v)
-            roc.up = cbind(roc.up, v2$v)
-        }
+    for(i in 1:split){
+      obj = v$fits[[i]]
+
+        beta.u[,i] = approx(obj$alpha.u, obj$beta.u, alphalist, method = 'constant', rule = 2, f = 0)$y
+
+
+      if(v$band == TRUE){
+        if(typeI.lower == 'FALSE'){
+          beta.l[,i] = approx(obj$alpha.u, obj$beta.l, alphalist, method = 'constant', rule = 2, f = 1)$y
+        }else{
+            beta.u[,i] = approx(obj$alpha.l, obj$beta.l, alphalist, method = 'constant', rule = 2, f = 0)$y
+          }
+      }
+      }
+    beta.u.m = apply(beta.u, 1, mean)
+    auc.l = sum(diff(alphalist) * (1-beta.u.m[-1]))
+    auc.u = NULL
+    beta.l.m = NULL
+    if (v$band == TRUE){
+    beta.l.m = apply(beta.l, 1, mean)
+    auc.u = sum(diff(alphalist) * (1-beta.l.m[-1]))
     }
 
-    object = list(roc.lo = roc.lo, roc.up = roc.up, conf = conf, method = method,
-        alphalist = alphalist, delta = delta, cat = v1$cat, adaptive = adaptive)
 
+
+    object = list(typeII.u = beta.u.m, typeII.l = beta.l.m, auc.l = auc.l, auc.u = auc.u, band = band, method = method,
+        typeI.u = alphalist, delta = delta)
     class(object) = "nproc"
     return(object)
 }

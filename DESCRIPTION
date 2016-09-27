@@ -1,8 +1,8 @@
 Package: nproc
 Type: Package
 Title: Neyman-Pearson Receiver Operating Characteristics
-Version: 1.2
-Date: 2016-08-10
+Version: 2.0.1
+Date: 2016-09-18
 Author: Yang Feng, Jessica Li and Xin Tong
 Maintainer: Yang Feng <yang.feng@columbia.edu>
 Imports: glmnet, e1071, randomForest, MASS, parallel, ada, stats,
@@ -15,6 +15,6 @@ URL: http://arxiv.org/abs/1608.03109
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2016-08-11 00:31:00 UTC; yangfeng
+Packaged: 2016-09-26 23:56:48 UTC; yangfeng
 Repository: CRAN
-Date/Publication: 2016-08-11 13:02:48
+Date/Publication: 2016-09-27 08:41:50

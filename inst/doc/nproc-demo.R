@@ -77,10 +77,17 @@ fit = nproc(x, y, method = "lda")
 plot(fit)
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = "logistic", conf = TRUE)
+fit = nproc(x, y, method = "logistic", band = TRUE)
 plot(fit)
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = c('svm','lda'), conf = T)
-plot(fit)
+n = 1000
+set.seed(0)
+x1 = c(rnorm(n), rnorm(n) + 1)
+x2 = c(rnorm(n), rnorm(n)*sqrt(6) + 1)
+y = c(rep(0,n), rep(1,n))
+fit1 = nproc(x1, y, split = 11, method = 'lda')
+fit2 = nproc(x2, y, split = 11, method = 'lda')
+v = compare(fit1, fit2)
+legend('topleft',legend = c(expression(X[1]),expression(X[2])),col = 1:2,lty = c(1,1))
 

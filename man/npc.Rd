@@ -5,10 +5,9 @@
 \title{Calculate the Neyman-Pearson Classifier from a sample of class 0 and class 1.}
 \usage{
 npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-  "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL,
-  pred.score = NULL, alpha = 0.05, delta = 0.05, split = 1,
-  split.ratio = 0.5, n01.min = 10, adaptive = FALSE, n.cores = 1,
-  randSeed = 0)
+  "lda", "nb", "ada", "custom"), band = FALSE, kernel = "radial",
+  score = NULL, pred.score = NULL, alpha = 0.05, delta = 0.05,
+  split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -27,6 +26,8 @@ npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 \item custom: a custom classifier. score vector needed.
 }}
 
+\item{band}{whether to generate the type II error lower and upper bounds. If TRUE, the class 1 data needs to be splitted into two parts like class 0. Default = FALSE.}
+
 \item{kernel}{kernel used in the svm method. Default = 'radial'.}
 
 \item{score}{score vector corresponding to y. Required when method  = 'custom'.}
@@ -43,11 +44,6 @@ version, choose split > 1.  When method = 'custom',  split = 0 always.}
 \item{split.ratio}{the ratio of splits used for the class 0 sample to train the
 classifier. Default = 0.5.}
 
-\item{n01.min}{the minimum number of class 0 observations used for training classifier. Default = 10.}
-
-\item{adaptive}{whether to adaptively choose the number of observations used for
-determining the cutoff when 1/2 n0 < lower bound < n0. Default = F.}
-
 \item{n.cores}{number of cores used for parallel computing. Default = 1. WARNING:
 windows machine is not supported.}
 
@@ -55,26 +51,17 @@ windows machine is not supported.}
 }
 \value{
 An object with S3 class npc.
-\item{fit}{the fit from the specified classifier.}
-\item{score}{the score vector for each observation.}
- \item{cutoff}{thecutoff determined via bootstrap to achieve the specified type I error
-  control.}
- \item{sign}{whether class 1 has a larger average score than the
-  class 0.}
+\item{fits}{a list of length split, represents the fit during each split.}
+ \item{band}{whether the lower bound of type II erro is calculated.}
  \item{method}{the classification method.}
- \item{loc.prob}{the
-  percentile used to determine the cutoff for the specified type I error
-  control.}
   \item{split}{the number of splits used.}
-  \item{n0toosmall}{whether the class 0 sample size is too small for the desirable type
-  I error control}
 }
 \description{
 Give a type I error upper bound alpha and the violation upper bound delta, \code{npc} calculate the Neyman-Pearson Classifier
 which control the type I error with in alpha with probability at least 1-delta
 }
 \examples{
-set.seed(0)
+set.seed(1)
 n = 1000
 x = matrix(rnorm(n*2),n,2)
 c = 1+3*x[,1]
@@ -94,13 +81,13 @@ typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\\n')
 
 ##Ensembled svm classifier with split = 11,  alpha=0.05
-fit = npc(x, y, method = 'svm', split = 11)
-pred = predict(fit,xtest)
-accuracy = mean(pred$pred.label==ytest)
-cat('Overall Accuracy: ',  accuracy,'\\n')
-ind0 = which(ytest==0)
-typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-cat('Type I error: ', typeI, '\\n')
+#fit = npc(x, y, method = 'svm', split = 11)
+#pred = predict(fit,xtest)
+#accuracy = mean(pred$pred.label==ytest)
+#cat('Overall Accuracy: ',  accuracy,'\\n')
+#ind0 = which(ytest==0)
+#typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#cat('Type I error: ', typeI, '\\n')
 
 ##Now, change the method to logistic regression and change alpha to 0.1
 fit = npc(x, y, method = 'logistic', alpha = 0.1)
@@ -112,17 +99,17 @@ typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\\n')
 
 ##Now, change the method to adaboost
-fit = npc(x, y, method = 'ada', alpha = 0.1)
-pred = predict(fit,xtest)
-accuracy = mean(pred$pred.label==ytest)
-cat('Overall Accuracy: ',  accuracy,'\\n')
-ind0 = which(ytest==0)
-typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-cat('Type I error: ', typeI, '\\n')
+#fit = npc(x, y, method = 'ada', alpha = 0.1)
+#pred = predict(fit,xtest)
+#accuracy = mean(pred$pred.label==ytest)
+#cat('Overall Accuracy: ',  accuracy,'\\n')
+#ind0 = which(ytest==0)
+#typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#cat('Type I error: ', typeI, '\\n')
 
 ##A 'custom' npc classifier with y and score.
-fit2 = npc(y = y, score = fit.score$pred.score,
-pred.score = pred$pred.score, method = 'custom')
+#fit2 = npc(y = y, score = fit.score$pred.score,
+#pred.score = pred$pred.score, method = 'custom')
 }
 \references{
 Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109.
