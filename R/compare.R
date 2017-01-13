@@ -1,6 +1,6 @@
 #' Compare two NP classification methods at different thresholds.
 #'
-#' \code{compare} compares NP classification methods and provide the regions where one method is better than the other. The two NP-ROC curves are required to have the same alpha value sequence as well as having conf = TRUE.
+#' \code{compare} compares NP classification methods and provide the regions where one method is better than the other. The two NP-ROC curves are both required to have band = TRUE.
 #' @export
 #' @param roc1 the first nproc object.
 #' @param roc2 the second nproc object.

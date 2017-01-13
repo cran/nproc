@@ -5,14 +5,12 @@
 \title{Predicting the outcome of a set of new observations using the fitted npc
 object.}
 \usage{
-\method{predict}{npc}(object, newx = NULL, pred.score = NULL, ...)
+\method{predict}{npc}(object, newx = NULL, ...)
 }
 \arguments{
 \item{object}{fitted npc object using \code{npc}.}
 
 \item{newx}{a set of new observations.}
-
-\item{pred.score}{a vector of scores for the new observations. Used when method = 'custom'.}
 
 \item{...}{additional arguments.}
 }

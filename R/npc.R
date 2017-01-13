@@ -32,10 +32,8 @@
 #' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 #' \item custom: a custom classifier. score vector needed.
 #' }
-#' @param band  whether to generate the type II error lower and upper bounds. If TRUE, the class 1 data needs to be splitted into two parts like class 0. Default = FALSE.
 #' @param kernel kernel used in the svm method. Default = 'radial'.
 #' @param score score vector corresponding to y. Required when method  = 'custom'.
-#' @param pred.score predicted score vector for the test sample. Optional when method  = 'custom'.
 #' @param alpha the desirable control on type I error. Default = 0.05.
 #' @param delta the violation rate of the type I error. Default = 0.05.
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
@@ -44,15 +42,15 @@
 #' classifier. Default = 0.5.
 #' @param n.cores number of cores used for parallel computing. Default = 1. WARNING:
 #' windows machine is not supported.
+#' @param nproc.para parameters passed from a nproc call. Default = NULL.
 #' @param randSeed the random seed used in the algorithm.
 #' @return An object with S3 class npc.
-#' \item{fits}{a list of length split, represents the fit during each split.}
-#'  \item{band}{whether the lower bound of type II erro is calculated.}
+#'  \item{fits}{a list of length max(1,split), represents the fit during each split.}
 #'  \item{method}{the classification method.}
 #'   \item{split}{the number of splits used.}
 #' @seealso \code{\link{nproc}} and \code{\link{predict.npc}}
 #' @references
-#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109.
+#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109.
 #' @examples
 #' set.seed(1)
 #' n = 1000
@@ -101,12 +99,11 @@
 #' #cat('Type I error: ', typeI, '\n')
 #'
 #' ##A 'custom' npc classifier with y and score.
-#' #fit2 = npc(y = y, score = fit.score$pred.score,
-#' #pred.score = pred$pred.score, method = 'custom')
+#' #fit2 = npc(y = y, score = fit.score$pred.score, method = 'custom')
 
-npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "ada",
-    "custom"), band = FALSE, kernel = "radial", score = NULL, pred.score = NULL, alpha = 0.05, delta = 0.05, split = 1,
-    split.ratio = 0.5, n.cores = 1, randSeed = 0) {
+npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda",
+    "nb", "ada", "custom"), kernel = "radial", score = NULL, alpha = 0.05,
+    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, nproc.para = NULL, randSeed = 0) {
     if (!is.null(x)) {
         x = as.matrix(x)
     }
@@ -117,12 +114,11 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
     }
     if (!is.null(score)) {
         ## custom method, user specifed score vector
-        test.score = score
-        test.y = y
-        pred.score = pred.score
-        obj = npc.core(test.y, test.score, pred.score = pred.score, alpha = alpha, delta = delta)
-        object = list(pred.y = obj$pred.y, y = test.y, score = test.score, cutoff = obj$cutoff, sign = obj$sign,
-            method = method)
+        obj = npc.core(y, score, alpha = alpha, delta = delta)
+        object = NULL
+        object$fits[[1]] = obj
+        object$split = 0
+        object$method = method
         class(object) = "npc"
         return(object)
     } else {
@@ -139,39 +135,46 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
         n1 = length(ind1)
         if (split == 0) {
             ## no split, use all class 0 obs for training and for calculating the cutoff
-          fits = npc.split(x, y, p, kernel, alpha, delta, ind0, ind0, ind1, ind1, method, pred.score, n.cores = n.cores)
+            fits = npc.split(x, y, p, kernel, alpha, delta, ind0, ind0, ind1, ind1, method,
+                n.cores = n.cores)
         } else {
             ## with split
 
-                n0.1 = round(n0 * split.ratio)  ##default size for calculating the classifier
-                n1.1 = round(n1 * split.ratio)
+            n0.1 = round(n0 * split.ratio)  ##default size for calculating the classifier
+            n1.1 = round(n1 * split.ratio)
 
-                  ind01.mat = sapply(1:split, f <- function(i) {
-                    sample(ind0, n0.1)})
-                  ind11.mat = sapply(1:split, f <- function(i) {
-                      sample(ind1, n1.1)
-                  })
+            ind01.mat = sapply(1:split, f <- function(i) {
+                sample(ind0, n0.1)
+            })
+            ind11.mat = sapply(1:split, f <- function(i) {
+                sample(ind1, n1.1)
+            })
             ind02.mat = sapply(1:split, f <- function(i) {
-              setdiff(ind0, ind01.mat[, i])})
+                setdiff(ind0, ind01.mat[, i])
+            })
             ind12.mat = sapply(1:split, f <- function(i) {
                 setdiff(ind1, ind11.mat[, i])
             })
-            n0.cores = max(1,floor(n.cores/split))
-            if (band == TRUE) {
-              fits = mclapply(1:split, f <- function(i) {
-                npc.split(x, y, p, kernel, alpha, delta, ind01.mat[, i], ind02.mat[, i], ind11.mat[,i], ind12.mat[,i], method,
-                          pred.score, n.cores = n0.cores)
-              }, mc.cores = n.cores)
+            n0.cores = max(1, floor(n.cores/split))
+            if (is.null(nproc.para)){
+              band = FALSE
             } else{
-              fits = mclapply(1:split, f <- function(i) {
-                npc.split(x, y, p, kernel, alpha, delta, ind01.mat[, i], ind02.mat[, i], ind1, ind1, method,
-                          pred.score, n.cores = n0.cores)
-              }, mc.cores = n.cores)
+              band = nproc.para$band
+            }
+            if (band == TRUE) {
+                fits = mclapply(1:split, f <- function(i) {
+                  npc.split(x, y, p, kernel, alpha, delta, ind01.mat[, i], ind02.mat[,
+                    i], ind11.mat[, i], ind12.mat[, i], method, n.cores = n0.cores)
+                }, mc.cores = n.cores)
+            } else {
+                fits = mclapply(1:split, f <- function(i) {
+                  npc.split(x, y, p, kernel, alpha, delta, ind01.mat[, i], ind02.mat[,
+                    i], ind1, ind1, method, n.cores = n0.cores)
+                }, mc.cores = n.cores)
             }
 
         }
         object$fits = fits
-        object$band = band
         object$split = split
         object$method = method
         class(object) = "npc"

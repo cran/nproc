@@ -66,7 +66,7 @@ cat(method, ': Type I error: ', typeI, '\n')
 
 
 ## ------------------------------------------------------------------------
-fit2 = npc(y = y, score = pred$pred.score, pred.score = pred$pred.score, method = 'custom')
+fit2 = npc(y = y, score = pred$pred.score, method = 'custom')
 
 ## ------------------------------------------------------------------------
 fit = nproc(x, y, method = "svm")

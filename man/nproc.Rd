@@ -6,8 +6,8 @@
 \usage{
 nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
   "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL,
-  pred.score = NULL, band = FALSE, typeI.lower = FALSE, delta = 0.05,
-  split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0)
+  band = FALSE, typeI.lower = FALSE, delta = 0.05, split = 1,
+  split.ratio = 0.5, n.cores = 1, randSeed = 0)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -30,11 +30,9 @@ nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 
 \item{score}{score vector corresponding to y. Required when method  = 'custom'.}
 
-\item{pred.score}{score vector corresponding to the test y. Required when method  = 'custom'.}
+\item{band}{whether to generate two NP-ROC curves representing a confidence band. Default = FALSE.}
 
-\item{band}{whether to generate two np roc curves representing a confidence band. Default = FALSE.}
-
-\item{typeI.lower}{whether to generate the data-driven type-I error lower bound. Default = FALSE.}
+\item{typeI.lower}{whether to generate the data-driven type-I error lower bound. NOTE: experimental feature. Default = FALSE.}
 
 \item{delta}{the violation rate of the type I error. Default = 0.05.}
 
@@ -70,9 +68,14 @@ c = 1 - 3*x[,1]
 y = rbinom(n,1,1/(1+exp(-c)))
 #fit = nproc(x, y, method = 'svm')
 fit2 = nproc(x, y, method = 'penlog')
-
 ##Plot the nproc curve
 plot(fit2)
+
+##custom method
+fit.npc = npc(x, y, method = 'svm')
+fit.score = predict(fit.npc,x)$pred.score
+fit.custom = nproc(y = y, score = fit.score, method = 'custom')
+
 #fit3 = nproc(x, y, method = 'penlog')
 
 ##Plot the nproc curve
@@ -94,7 +97,7 @@ plot(fit2)
 #fit7 = nproc(x, y, method = 'lda', split = 11)
 }
 \references{
-Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109
+Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109
 }
 \seealso{
 \code{\link{npc}}

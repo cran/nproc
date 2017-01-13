@@ -25,7 +25,7 @@ A list with the following items.
 \item{confidence}{represents the confidence level.}
 }
 \description{
-\code{compare} compares NP classification methods and provide the regions where one method is better than the other. The two NP-ROC curves are required to have the same alpha value sequence as well as having conf = TRUE.
+\code{compare} compares NP classification methods and provide the regions where one method is better than the other. The two NP-ROC curves are both required to have band = TRUE.
 }
 \examples{
 n = 1000

@@ -163,7 +163,7 @@ cat(method, ': Type I error: ', typeI, '\n')
 The package also implmented a generic classifier with the scores on each observation needed. An example is follows. 
 
 ```{r}
-fit2 = npc(y = y, score = pred$pred.score, pred.score = pred$pred.score, method = 'custom')
+fit2 = npc(y = y, score = pred$pred.score, method = 'custom')
 ```
 [Back to Top](#top)
 <a id="nproc"></a>

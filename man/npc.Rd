@@ -5,9 +5,9 @@
 \title{Calculate the Neyman-Pearson Classifier from a sample of class 0 and class 1.}
 \usage{
 npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-  "lda", "nb", "ada", "custom"), band = FALSE, kernel = "radial",
-  score = NULL, pred.score = NULL, alpha = 0.05, delta = 0.05,
-  split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0)
+  "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL,
+  alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5,
+  n.cores = 1, nproc.para = NULL, randSeed = 0)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -26,13 +26,9 @@ npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 \item custom: a custom classifier. score vector needed.
 }}
 
-\item{band}{whether to generate the type II error lower and upper bounds. If TRUE, the class 1 data needs to be splitted into two parts like class 0. Default = FALSE.}
-
 \item{kernel}{kernel used in the svm method. Default = 'radial'.}
 
 \item{score}{score vector corresponding to y. Required when method  = 'custom'.}
-
-\item{pred.score}{predicted score vector for the test sample. Optional when method  = 'custom'.}
 
 \item{alpha}{the desirable control on type I error. Default = 0.05.}
 
@@ -47,12 +43,13 @@ classifier. Default = 0.5.}
 \item{n.cores}{number of cores used for parallel computing. Default = 1. WARNING:
 windows machine is not supported.}
 
+\item{nproc.para}{parameters passed from a nproc call. Default = NULL.}
+
 \item{randSeed}{the random seed used in the algorithm.}
 }
 \value{
 An object with S3 class npc.
-\item{fits}{a list of length split, represents the fit during each split.}
- \item{band}{whether the lower bound of type II erro is calculated.}
+ \item{fits}{a list of length max(1,split), represents the fit during each split.}
  \item{method}{the classification method.}
   \item{split}{the number of splits used.}
 }
@@ -108,11 +105,10 @@ cat('Type I error: ', typeI, '\\n')
 #cat('Type I error: ', typeI, '\\n')
 
 ##A 'custom' npc classifier with y and score.
-#fit2 = npc(y = y, score = fit.score$pred.score,
-#pred.score = pred$pred.score, method = 'custom')
+#fit2 = npc(y = y, score = fit.score$pred.score, method = 'custom')
 }
 \references{
-Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109.
+Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109.
 }
 \seealso{
 \code{\link{nproc}} and \code{\link{predict.npc}}

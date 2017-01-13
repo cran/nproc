@@ -3,7 +3,6 @@
 #' @export
 #' @param object fitted npc object using \code{npc}.
 #' @param newx a set of new observations.
-#' @param pred.score a vector of scores for the new observations. Used when method = 'custom'.
 #' @param ... additional arguments.
 #' @return A list containing the predicted label and score.
 #' \item{pred.label}{Predicted label vector.}
@@ -31,16 +30,9 @@
 #' #typeII = mean(pred$pred.label[ind1]!=ytest[ind1]) #type II error on test set
 #' #cat('Type II error: ', typeII, '\n')
 
-predict.npc <- function(object, newx = NULL, pred.score = NULL, ...) {
-      if (object$method == "custom") {
-        if (is.null(pred.score)) {
-            stop("pred.score needed for method \"custom\".")
-        }
-        pred.score = pred.score
-        if (object$sign == FALSE) {
-          pred.score = - pred.score
-        }
-        pred.label = outer(pred.score, object$cutoff, ">")
+predict.npc <- function(object, newx = NULL, ...) {
+    if (object$method == "custom") {
+        stop("prediction for method \"custom\" not supported.")
     } else {
         colnames(newx) <- paste("x", 1:ncol(newx), sep = "")
         if (object$split < 1) {
@@ -51,22 +43,22 @@ predict.npc <- function(object, newx = NULL, pred.score = NULL, ...) {
             pred = pred.npc.core(object$fits[[1]], newx)
             pred.score = pred$pred.score
             pred.label = pred$pred.label
-
+            
             if (object$split > 1) {
                 for (i in 2:object$split) {
                   pred = pred.npc.core(object$fits[[i]], newx)
-
+                  
                   pred.label = pred.label + pred$pred.label
                   pred.score = pred.score + pred$pred.score
-
+                  
                 }
             }
             pred.label = (pred.label/object$split > 0.5)
             pred.score = pred.score/object$split
         }
     }
-
-
+    
+    
     return(list(pred.label = pred.label, pred.score = pred.score))
-
+    
 }

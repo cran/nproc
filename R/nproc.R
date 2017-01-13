@@ -18,9 +18,8 @@
 #' }
 #' @param kernel kernel used in the svm method. Default = 'radial'.
 #' @param score score vector corresponding to y. Required when method  = 'custom'.
-#' @param pred.score score vector corresponding to the test y. Required when method  = 'custom'.
-#' @param band whether to generate two np roc curves representing a confidence band. Default = FALSE.
-#' @param typeI.lower whether to generate the data-driven type-I error lower bound. Default = FALSE.
+#' @param band whether to generate two NP-ROC curves representing a confidence band. Default = FALSE.
+#' @param typeI.lower whether to generate the data-driven type-I error lower bound. NOTE: experimental feature. Default = FALSE.
 #' @param delta the violation rate of the type I error. Default = 0.05.
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
 #' version, choose split > 1.  When method = 'custom',  split = 0 always.
@@ -39,7 +38,7 @@
 #' \item{delta}{the violation rate.}
 #' @seealso \code{\link{npc}}
 #' @references
-#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109
+#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109
 #' @examples
 #' n = 200
 #' x = matrix(rnorm(n*2),n,2)
@@ -47,9 +46,14 @@
 #' y = rbinom(n,1,1/(1+exp(-c)))
 #' #fit = nproc(x, y, method = 'svm')
 #' fit2 = nproc(x, y, method = 'penlog')
-#'
 #' ##Plot the nproc curve
 #' plot(fit2)
+#'
+#' ##custom method
+#' fit.npc = npc(x, y, method = 'svm')
+#' fit.score = predict(fit.npc,x)$pred.score
+#' fit.custom = nproc(y = y, score = fit.score, method = 'custom')
+#'
 #' #fit3 = nproc(x, y, method = 'penlog')
 #'
 #' ##Plot the nproc curve
@@ -73,52 +77,58 @@
 
 
 
-nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "ada",
-    "custom"), kernel = "radial", score = NULL, pred.score = NULL, band = FALSE, typeI.lower = FALSE, delta = 0.05, split = 1,
-    split.ratio = 0.5, n.cores = 1, randSeed = 0) {
+nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
+    "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, band = FALSE, typeI.lower = FALSE,
+    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0) {
     if (!is.null(x)) {
         x = as.matrix(x)
-    }
-    p = ncol(x)
-    if (p == 1 & method == "penlog") {
-        stop("glmnet does not support the one predictor case. ")
+        p = ncol(x)
+        if (p == 1 & method == "penlog") {
+            stop("glmnet does not support the one predictor case. ")
+        }
     }
     method = match.arg(method)
     set.seed(randSeed)
-    v = npc(x, y, method = method, band = band, kernel = kernel, score = score, pred.score = pred.score, delta = delta, split = split, split.ratio = split.ratio, n.cores = n.cores, randSeed = randSeed)
+    nproc.para = list(band = band)
+    v = npc(x, y, method = method, kernel = kernel, score = score, delta = delta,
+        split = split, split.ratio = split.ratio, n.cores = n.cores, nproc.para = nproc.para, randSeed = randSeed)
 
     split = v$split
     alphalist = seq(from = 0, to = 1, by = 0.001)
     n.alpha = length(alphalist)
-    beta.u = beta.l = matrix(0,n.alpha,split)
+    beta.u = beta.l = matrix(0, n.alpha, max(split, 1))
 
-    for(i in 1:split){
-      obj = v$fits[[i]]
+    for (i in 1:max(split, 1)) {
+        obj = v$fits[[i]]
+        beta.u[, i] = approx(obj$alpha.u, obj$beta.u, alphalist, method = "constant", rule = 2,
+            f = 0)$y
 
-        beta.u[,i] = approx(obj$alpha.u, obj$beta.u, alphalist, method = 'constant', rule = 2, f = 0)$y
 
-
-      if(v$band == TRUE){
-        if(typeI.lower == 'FALSE'){
-          beta.l[,i] = approx(obj$alpha.u, obj$beta.l, alphalist, method = 'constant', rule = 2, f = 1)$y
-        }else{
-            beta.u[,i] = approx(obj$alpha.l, obj$beta.l, alphalist, method = 'constant', rule = 2, f = 0)$y
-          }
-      }
-      }
+        if (band == TRUE) {
+            if (typeI.lower == "FALSE") {
+                beta.l[, i] = approx(obj$alpha.u, obj$beta.l, alphalist, method = "constant",
+                  rule = 2, f = 1)$y
+            } else {
+                beta.u[, i] = approx(obj$alpha.l, obj$beta.l, alphalist, method = "constant",
+                  rule = 2, f = 0)$y
+            }
+        }
+    }
     beta.u.m = apply(beta.u, 1, mean)
-    auc.l = sum(diff(alphalist) * (1-beta.u.m[-1]))
+
+
+    auc.l = sum(diff(alphalist) * (1 - beta.u.m[-1]))
     auc.u = NULL
     beta.l.m = NULL
-    if (v$band == TRUE){
-    beta.l.m = apply(beta.l, 1, mean)
-    auc.u = sum(diff(alphalist) * (1-beta.l.m[-1]))
+    if (band == TRUE) {
+        beta.l.m = apply(beta.l, 1, mean)
+        auc.u = sum(diff(alphalist) * (1 - beta.l.m[-1]))
     }
 
 
 
-    object = list(typeII.u = beta.u.m, typeII.l = beta.l.m, auc.l = auc.l, auc.u = auc.u, band = band, method = method,
-        typeI.u = alphalist, delta = delta)
+    object = list(typeII.u = beta.u.m, typeII.l = beta.l.m, auc.l = auc.l, auc.u = auc.u,
+        band = band, method = method, typeI.u = alphalist, delta = delta, v = v)
     class(object) = "nproc"
     return(object)
 }

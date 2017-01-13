@@ -1,3 +1,5 @@
+2017-01-11 Yang Feng <yang.feng@columbia.edu> Version 2.0.4
+  *improve the memory use for the outer function in find.order function
 2016-09-18 Yang Feng <yang.feng@columbia.edu> Version 2.0.1
   *using only the cutoffs from class 0 to create the NP-ROC band to match the theory.
 2016-09-14 Yang Feng <yang.feng@columbia.edu> Version 2.0

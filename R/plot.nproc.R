@@ -15,11 +15,11 @@
 #' plot(fit)
 
 plot.nproc <- function(x, col = "black", ...) {
-
-plot(x$typeI.u, 1 - x$typeII.u, xlab = 'FPR', ylab = 'TPR', type = 'l', col = col)
-if (x$band) {
-lines(x$typeI.u, 1 - x$typeII.l, col = col)
-}
-
+    
+    plot(x$typeI.u, 1 - x$typeII.u, xlab = "FPR", ylab = "TPR", type = "l", col = col)
+    if (x$band) {
+        lines(x$typeI.u, 1 - x$typeII.l, col = col)
+    }
+    
 }
 
