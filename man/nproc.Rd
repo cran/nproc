@@ -5,9 +5,9 @@
 \title{Calculate the Neyman-Pearson Receiver Operating Characteristics}
 \usage{
 nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-  "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL,
-  band = FALSE, typeI.lower = FALSE, delta = 0.05, split = 1,
-  split.ratio = 0.5, n.cores = 1, randSeed = 0)
+  "lda", "nb", "ada", "tree", "custom"), score = NULL, band = FALSE,
+  typeI.lower = FALSE, delta = 0.05, split = 1, split.ratio = 0.5,
+  n.cores = 1, randSeed = 0, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -26,8 +26,6 @@ nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 \item custom: a custom classifier. score vector needed.
 }}
 
-\item{kernel}{kernel used in the svm method. Default = 'radial'.}
-
 \item{score}{score vector corresponding to y. Required when method  = 'custom'.}
 
 \item{band}{whether to generate two NP-ROC curves representing a confidence band. Default = FALSE.}
@@ -45,6 +43,8 @@ classifier. Default = 0.5.}
 \item{n.cores}{number of cores used for parallel computing. Default = 1.}
 
 \item{randSeed}{the random seed used in the algorithm.}
+
+\item{...}{additional arguments.}
 }
 \value{
 An object with S3 class nproc.

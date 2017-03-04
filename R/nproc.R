@@ -16,7 +16,6 @@
 #' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 #' \item custom: a custom classifier. score vector needed.
 #' }
-#' @param kernel kernel used in the svm method. Default = 'radial'.
 #' @param score score vector corresponding to y. Required when method  = 'custom'.
 #' @param band whether to generate two NP-ROC curves representing a confidence band. Default = FALSE.
 #' @param typeI.lower whether to generate the data-driven type-I error lower bound. NOTE: experimental feature. Default = FALSE.
@@ -27,6 +26,7 @@
 #' classifier. Default = 0.5.
 #' @param n.cores number of cores used for parallel computing. Default = 1.
 #' @param randSeed the random seed used in the algorithm.
+#' @param ... additional arguments.
 #' @return An object with S3 class nproc.
 #' \item{typeI.u}{sequence of upper bound of type I error.}
 #' \item{typeII.l}{sequence of lower bound of type I error.}
@@ -78,8 +78,8 @@
 
 
 nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-    "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL, band = FALSE, typeI.lower = FALSE,
-    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0) {
+    "lda", "nb", "ada", "tree", "custom"), score = NULL, band = FALSE, typeI.lower = FALSE,
+    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0, ...) {
     if (!is.null(x)) {
         x = as.matrix(x)
         p = ncol(x)
@@ -90,8 +90,8 @@ nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfo
     method = match.arg(method)
     set.seed(randSeed)
     nproc.para = list(band = band)
-    v = npc(x, y, method = method, kernel = kernel, score = score, delta = delta,
-        split = split, split.ratio = split.ratio, n.cores = n.cores, nproc.para = nproc.para, randSeed = randSeed)
+    v = npc(x, y, method = method, score = score, delta = delta,
+        split = split, split.ratio = split.ratio, n.cores = n.cores, nproc.para = nproc.para, randSeed = randSeed, ...)
 
     split = v$split
     alphalist = seq(from = 0, to = 1, by = 0.001)

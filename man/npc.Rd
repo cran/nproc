@@ -5,9 +5,9 @@
 \title{Calculate the Neyman-Pearson Classifier from a sample of class 0 and class 1.}
 \usage{
 npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-  "lda", "nb", "ada", "custom"), kernel = "radial", score = NULL,
-  alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5,
-  n.cores = 1, nproc.para = NULL, randSeed = 0)
+  "lda", "nb", "ada", "tree", "custom"), score = NULL, alpha = 0.05,
+  delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1,
+  nproc.para = NULL, randSeed = 0, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -25,8 +25,6 @@ npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 \item custom: a custom classifier. score vector needed.
 }}
-
-\item{kernel}{kernel used in the svm method. Default = 'radial'.}
 
 \item{score}{score vector corresponding to y. Required when method  = 'custom'.}
 
@@ -46,6 +44,8 @@ windows machine is not supported.}
 \item{nproc.para}{parameters passed from a nproc call. Default = NULL.}
 
 \item{randSeed}{the random seed used in the algorithm.}
+
+\item{...}{additional arguments.}
 }
 \value{
 An object with S3 class npc.

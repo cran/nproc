@@ -4,12 +4,10 @@
 \alias{plot.nproc}
 \title{Plot the nproc curve(s).}
 \usage{
-\method{plot}{nproc}(x, col = "black", ...)
+\method{plot}{nproc}(x, ...)
 }
 \arguments{
 \item{x}{fitted nproc object using \code{nproc}.}
-
-\item{col}{color of the plots.}
 
 \item{...}{additional arguments.}
 }

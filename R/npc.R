@@ -18,6 +18,8 @@
 #' @importFrom stats pbinom
 #' @importFrom stats rnorm
 #' @importFrom stats sd
+#' @importFrom stats rbinom
+#' @importFrom tree tree
 #' @importFrom graphics polygon
 #' @param x n * p observation matrix. n observations, p covariates.
 #' @param y n 0/1 observatons.
@@ -32,7 +34,6 @@
 #' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 #' \item custom: a custom classifier. score vector needed.
 #' }
-#' @param kernel kernel used in the svm method. Default = 'radial'.
 #' @param score score vector corresponding to y. Required when method  = 'custom'.
 #' @param alpha the desirable control on type I error. Default = 0.05.
 #' @param delta the violation rate of the type I error. Default = 0.05.
@@ -44,6 +45,7 @@
 #' windows machine is not supported.
 #' @param nproc.para parameters passed from a nproc call. Default = NULL.
 #' @param randSeed the random seed used in the algorithm.
+#' @param ... additional arguments.
 #' @return An object with S3 class npc.
 #'  \item{fits}{a list of length max(1,split), represents the fit during each split.}
 #'  \item{method}{the classification method.}
@@ -102,8 +104,8 @@
 #' #fit2 = npc(y = y, score = fit.score$pred.score, method = 'custom')
 
 npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda",
-    "nb", "ada", "custom"), kernel = "radial", score = NULL, alpha = 0.05,
-    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, nproc.para = NULL, randSeed = 0) {
+    "nb", "ada", "tree", "custom"), score = NULL, alpha = 0.05,
+    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, nproc.para = NULL, randSeed = 0, ...) {
     if (!is.null(x)) {
         x = as.matrix(x)
     }
@@ -135,8 +137,8 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
         n1 = length(ind1)
         if (split == 0) {
             ## no split, use all class 0 obs for training and for calculating the cutoff
-            fits = npc.split(x, y, p, kernel, alpha, delta, ind0, ind0, ind1, ind1, method,
-                n.cores = n.cores)
+            fits = npc.split(x, y, p, alpha, delta, ind0, ind0, ind1, ind1, method,
+                n.cores = n.cores, ...)
         } else {
             ## with split
 
@@ -163,13 +165,13 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
             }
             if (band == TRUE) {
                 fits = mclapply(1:split, f <- function(i) {
-                  npc.split(x, y, p, kernel, alpha, delta, ind01.mat[, i], ind02.mat[,
-                    i], ind11.mat[, i], ind12.mat[, i], method, n.cores = n0.cores)
+                  npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
+                    i], ind11.mat[, i], ind12.mat[, i], method, n.cores = n0.cores, ...)
                 }, mc.cores = n.cores)
             } else {
                 fits = mclapply(1:split, f <- function(i) {
-                  npc.split(x, y, p, kernel, alpha, delta, ind01.mat[, i], ind02.mat[,
-                    i], ind1, ind1, method, n.cores = n0.cores)
+                  npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
+                    i], ind1, ind1, method, n.cores = n0.cores, ...)
                 }, mc.cores = n.cores)
             }
 

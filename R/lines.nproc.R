@@ -3,16 +3,14 @@
 #' @importFrom graphics legend
 #' @importFrom graphics lines
 #' @param x fitted NP-ROC object using \code{nproc}.
-#' @param col color of the added line.
 #' @param ... additional arguments.
 #' @seealso \code{\link{npc}}, \code{\link{nproc}} and \code{\link{plot.nproc}}.
 
-lines.nproc <- function(x, col = "black", ...) {
-    
-    lines(x$typeI.u, 1 - x$typeII.u, xlab = "FPR", ylab = "TPR", type = "l", col = col)
+lines.nproc <- function(x, ...) {
+    lines(x$typeI.u, 1 - x$typeII.u, type = "s", ...)
     if (x$band == TRUE) {
-        lines(x$typeI.u, 1 - x$typeII.l, col = col)
+        lines(x$typeI.u, 1 - x$typeII.l, type = "s", ...)
     }
-    
+
 }
 

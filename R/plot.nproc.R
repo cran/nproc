@@ -1,9 +1,9 @@
 #' Plot the nproc curve(s).
 #' @export
+#' @method plot nproc
 #' @importFrom graphics legend
 #' @importFrom graphics lines
 #' @param x fitted nproc object using \code{nproc}.
-#' @param col color of the plots.
 #' @param ... additional arguments.
 #' @seealso \code{\link{npc}}, \code{\link{nproc}}
 #' @examples
@@ -14,12 +14,12 @@
 #' fit = nproc(x, y, method = 'svm')
 #' plot(fit)
 
-plot.nproc <- function(x, col = "black", ...) {
-    
-    plot(x$typeI.u, 1 - x$typeII.u, xlab = "FPR", ylab = "TPR", type = "l", col = col)
+plot.nproc <- function(x, ...) {
+
+    plot(x$typeI.u, 1 - x$typeII.u, xlab = "FPR", ylab = "TPR", type = "l", ...)
     if (x$band) {
-        lines(x$typeI.u, 1 - x$typeII.l, col = col)
+        lines(x$typeI.u, 1 - x$typeII.l, ...)
     }
-    
+
 }
 

@@ -4,12 +4,10 @@
 \alias{lines.nproc}
 \title{Add NP-ROC curves to the current plot object.}
 \usage{
-\method{lines}{nproc}(x, col = "black", ...)
+\method{lines}{nproc}(x, ...)
 }
 \arguments{
 \item{x}{fitted NP-ROC object using \code{nproc}.}
-
-\item{col}{color of the added line.}
 
 \item{...}{additional arguments.}
 }

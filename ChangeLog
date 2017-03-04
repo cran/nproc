@@ -1,3 +1,7 @@
+2017-02-13 Yang Feng <yang.feng@columbia.edu> Version 2.0.6
+*add implementation for roc with cross-validation
+2017-01-18 Yang Feng <yang.feng@columbia.edu> Version 2.0.5
+ *pass additional arguments to different classifiers via …
 2017-01-11 Yang Feng <yang.feng@columbia.edu> Version 2.0.4
   *improve the memory use for the outer function in find.order function
 2016-09-18 Yang Feng <yang.feng@columbia.edu> Version 2.0.1
