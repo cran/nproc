@@ -14,7 +14,16 @@
 \description{
 Add NP-ROC curves to the current plot object.
 }
+\examples{
+n = 1000
+x = matrix(rnorm(n*2),n,2)
+c = 1+3*x[,1]
+y = rbinom(n,1,1/(1+exp(-c)))
+fit = nproc(x, y, method = 'svm')
+plot(fit)
+fit2 = nproc(x, y, method = 'lda')
+lines(fit2, col = 2)
+}
 \seealso{
 \code{\link{npc}}, \code{\link{nproc}} and \code{\link{plot.nproc}}.
 }
-

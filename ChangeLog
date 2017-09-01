@@ -1,3 +1,6 @@
+2017-08-17 Yang Feng <yang.feng@columbia.edu> Version 2.0.8
+*remove the custom option
+*remove the nproc line, only keeps the band version
 2017-02-13 Yang Feng <yang.feng@columbia.edu> Version 2.0.6
 *add implementation for roc with cross-validation
 2017-01-18 Yang Feng <yang.feng@columbia.edu> Version 2.0.5
@@ -7,8 +10,8 @@
 2016-09-18 Yang Feng <yang.feng@columbia.edu> Version 2.0.1
   *using only the cutoffs from class 0 to create the NP-ROC band to match the theory.
 2016-09-14 Yang Feng <yang.feng@columbia.edu> Version 2.0
- *change the implementation of the interpolation for ROC confidence band by using a piecewise constant function to approximate the upper and lower bounds. 
-  *using all the possible cutoff from class 1 and class 0 to create the NP-ROC band. 
+ *change the implementation of the interpolation for ROC confidence band by using a piecewise constant function to approximate the upper and lower bounds.
+  *using all the possible cutoff from class 1 and class 0 to create the NP-ROC band.
 2016-09-08 Yang Feng <yang.feng@columbia.edu> Version 1.9
   *change the implementation of the npc. In particular, originally, we are looking for the order statistic that satisfies the type I error upper bound with high-probability. Now, we investigate all possible cutoffs and evaluate its corresponding upper and lower bounds of type I and type II errors. This way, we do not need to impose the minimal sample size requirement.
   *change the implementation of the ROC confidence band, here, the lower bound represents the upper bounds of type I error and 1-upper bounds of type II error. The upper bound represents the lower bounds of type I error and 1-lower bounds of type II error. Upon this revision, the comparison between two methods is more reasonable and has theoretical support.

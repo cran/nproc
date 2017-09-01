@@ -86,7 +86,8 @@ classification.core <- function(method, train.x, train.y, test.x, ...){
     train.data = data.frame(train.x, y = train.y)
     fit = ada(y ~ ., data = train.data)
     test.score = predict(fit, data.frame(test.x), type = "probs")[, 2]
-  } else if (method == 'tree'){
+  } else if (method == 'tree') {
+    train.y = as.factor(train.y)
     train.data = data.frame(train.x, y = train.y)
     fit = tree(y~ ., data = train.data)
     test.score = predict(fit, newdata = data.frame(test.x), type = 'vector')

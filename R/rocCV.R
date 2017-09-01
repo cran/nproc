@@ -1,6 +1,6 @@
 #' Calculate the Receiver Operating Characteristics with Cross-validation or Subsampling
 #'
-#' \code{rocCV} calculate the receiver operating characterisitc with cross-validation
+#' \code{rocCV} calculates the receiver operating characterisitc with cross-validation
 #' @importFrom ROCR prediction
 #' @importFrom ROCR performance
 #' @export

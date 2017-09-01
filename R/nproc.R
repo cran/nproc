@@ -1,11 +1,11 @@
 #' Calculate the Neyman-Pearson Receiver Operating Characteristics
 #'
-#' \code{nproc} calculate the Neyman-Pearson Receiver Operating Characteristics
-#' curve for a given sequence of type I error values.
+#' \code{nproc} calculates the Neyman-Pearson Receiver Operating Characteristics
+#' band for a given sequence of type I error values.
 #' @export
 #' @param x n * p observation matrix. n observations, p covariates.
 #' @param y n 0/1 observatons.
-#' @param method classification method(s).
+#' @param method base classification method(s).
 #' \itemize{
 #' \item logistic: Logistic regression. \link{glm} function with family = 'binomial'
 #' \item penlog: Penalized logistic regression with LASSO penalty. \code{\link[glmnet]{glmnet}} in \code{glmnet} package
@@ -14,14 +14,10 @@
 #' \item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
 #' \item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
 #' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
-#' \item custom: a custom classifier. score vector needed.
 #' }
-#' @param score score vector corresponding to y. Required when method  = 'custom'.
-#' @param band whether to generate two NP-ROC curves representing a confidence band. Default = FALSE.
-#' @param typeI.lower whether to generate the data-driven type-I error lower bound. NOTE: experimental feature. Default = FALSE.
 #' @param delta the violation rate of the type I error. Default = 0.05.
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
-#' version, choose split > 1.  When method = 'custom',  split = 0 always.
+#' version, choose split > 1.
 #' @param split.ratio the ratio of splits used for the class 0 sample to train the
 #' classifier. Default = 0.5.
 #' @param n.cores number of cores used for parallel computing. Default = 1.
@@ -29,12 +25,11 @@
 #' @param ... additional arguments.
 #' @return An object with S3 class nproc.
 #' \item{typeI.u}{sequence of upper bound of type I error.}
-#' \item{typeII.l}{sequence of lower bound of type I error.}
+#' \item{typeII.l}{sequence of lower bound of type II error.}
 #' \item{typeII.u}{sequence of upper bound of type II error.}
 #' \item{auc.l}{the auc value of the lower NP-ROC curve.}
 #' \item{auc.u}{the auc value of the upper NP-ROC curve.}
-#' \item{band}{whether the upper NP-ROC curve is generated.}
-#' \item{method}{the classification method implemented.}
+#' \item{method}{the base classification method implemented.}
 #' \item{delta}{the violation rate.}
 #' @seealso \code{\link{npc}}
 #' @references
@@ -49,37 +44,22 @@
 #' ##Plot the nproc curve
 #' plot(fit2)
 #'
-#' ##custom method
-#' fit.npc = npc(x, y, method = 'svm')
-#' fit.score = predict(fit.npc,x)$pred.score
-#' fit.custom = nproc(y = y, score = fit.score, method = 'custom')
-#'
-#' #fit3 = nproc(x, y, method = 'penlog')
-#'
-#' ##Plot the nproc curve
-#' #plot(fit3)
 #'
 #' #fit3 = nproc(x, y, method = 'penlog',  n.cores = 2)
 #' #In practice, replace 2 by the number of cores available 'detectCores()'
 #' #fit4 = nproc(x, y, method = 'penlog', n.cores = detectCores())
 #'
-#' #Testing the custom method for nproc.
-#' #fit = npc(x, y, method = 'lda', split = 0,  n.cores = 2) #use npc to get score list.
-#' #obj = nproc(x = NULL, y = fit$y, method = 'custom', split = 0,
-#' #score = fit$score,  n.cores = 2)
-#'
 #' #Confidence nproc curves
-#' #fit6 = nproc(x, y, method = 'lda', band = TRUE)
-#'
+#' #fit6 = nproc(x, y, method = 'lda')
+#' #plot(fit6)
 #' #nproc ensembled version
 #' #fit7 = nproc(x, y, method = 'lda', split = 11)
+#' #plot(fit7)
 
 
 
 
-nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-    "lda", "nb", "ada", "tree", "custom"), score = NULL, band = FALSE, typeI.lower = FALSE,
-    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0, ...) {
+nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "ada", "tree"), delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0, ...) {
     if (!is.null(x)) {
         x = as.matrix(x)
         p = ncol(x)
@@ -89,9 +69,8 @@ nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfo
     }
     method = match.arg(method)
     set.seed(randSeed)
-    nproc.para = list(band = band)
-    v = npc(x, y, method = method, score = score, delta = delta,
-        split = split, split.ratio = split.ratio, n.cores = n.cores, nproc.para = nproc.para, randSeed = randSeed, ...)
+    v = npc(x, y, method = method, delta = delta,
+        split = split, split.ratio = split.ratio, n.cores = n.cores, band = TRUE, randSeed = randSeed, ...)
 
     split = v$split
     alphalist = seq(from = 0, to = 1, by = 0.001)
@@ -103,32 +82,28 @@ nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfo
         beta.u[, i] = approx(obj$alpha.u, obj$beta.u, alphalist, method = "constant", rule = 2,
             f = 0)$y
 
-
-        if (band == TRUE) {
-            if (typeI.lower == "FALSE") {
+        typeI.lower = FALSE
+            if (typeI.lower == FALSE) {
                 beta.l[, i] = approx(obj$alpha.u, obj$beta.l, alphalist, method = "constant",
                   rule = 2, f = 1)$y
             } else {
                 beta.u[, i] = approx(obj$alpha.l, obj$beta.l, alphalist, method = "constant",
                   rule = 2, f = 0)$y
             }
-        }
     }
     beta.u.m = apply(beta.u, 1, mean)
 
 
     auc.l = sum(diff(alphalist) * (1 - beta.u.m[-1]))
     auc.u = NULL
-    beta.l.m = NULL
-    if (band == TRUE) {
-        beta.l.m = apply(beta.l, 1, mean)
-        auc.u = sum(diff(alphalist) * (1 - beta.l.m[-1]))
-    }
+
+    beta.l.m = apply(beta.l, 1, mean)
+    auc.u = sum(diff(alphalist) * (1 - beta.l.m[-1]))
 
 
 
-    object = list(typeII.u = beta.u.m, typeII.l = beta.l.m, auc.l = auc.l, auc.u = auc.u,
-        band = band, method = method, typeI.u = alphalist, delta = delta, v = v)
+
+    object = list(typeII.u = beta.u.m, typeII.l = beta.l.m, auc.l = auc.l, auc.u = auc.u, method = method, typeI.u = alphalist, delta = delta, v = v)
     class(object) = "nproc"
     return(object)
 }

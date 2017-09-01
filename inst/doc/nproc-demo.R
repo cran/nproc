@@ -36,19 +36,19 @@ cat('Type I error: ', typeI, '\n')
 ## ------------------------------------------------------------------------
 fit = npc(x, y, method = "logistic", alpha = 0.1)
 pred = predict(fit,xtest)
-accuracy = mean(pred$pred.label==ytest)
+accuracy = mean(pred$pred.label == ytest)
 cat("Overall Accuracy: ",  accuracy,'\n')
-ind0 = which(ytest==0)
-typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+ind0 = which(ytest == 0)
+typeI = mean(pred$pred.label[ind0] != ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\n')
 
 ## ------------------------------------------------------------------------
 fit = npc(x, y, method = "logistic", alpha = 0.1, split = 11)
 pred = predict(fit,xtest)
-accuracy = mean(pred$pred.label==ytest)
+accuracy = mean(pred$pred.label == ytest)
 cat("Overall Accuracy: ",  accuracy,'\n')
-ind0 = which(ytest==0)
-typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+ind0 = which(ytest == 0)
+typeI = mean(pred$pred.label[ind0] != ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\n')
 
 ## ------------------------------------------------------------------------
@@ -66,19 +66,12 @@ cat(method, ': Type I error: ', typeI, '\n')
 
 
 ## ------------------------------------------------------------------------
-fit2 = npc(y = y, score = pred$pred.score, method = 'custom')
-
-## ------------------------------------------------------------------------
 fit = nproc(x, y, method = "svm")
 plot(fit)
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = "lda")
-plot(fit)
-
-## ------------------------------------------------------------------------
-fit = nproc(x, y, method = "logistic", band = TRUE)
-plot(fit)
+fit2 = nproc(x, y, method = "lda")
+plot(fit2)
 
 ## ------------------------------------------------------------------------
 n = 1000

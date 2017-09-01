@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.nproc.R
 \name{plot.nproc}
 \alias{plot.nproc}
-\title{Plot the nproc curve(s).}
+\title{Plot the nproc band(s).}
 \usage{
 \method{plot}{nproc}(x, ...)
 }
@@ -12,7 +12,7 @@
 \item{...}{additional arguments.}
 }
 \description{
-Plot the nproc curve(s).
+Plot the nproc band(s).
 }
 \examples{
 n = 1000
@@ -25,4 +25,3 @@ plot(fit)
 \seealso{
 \code{\link{npc}}, \code{\link{nproc}}
 }
-

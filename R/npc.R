@@ -1,7 +1,7 @@
-#' Calculate the Neyman-Pearson Classifier from a sample of class 0 and class 1.
+#' Construct a Neyman-Pearson Classifier from a sample of class 0 and class 1.
 #'
-#' Give a type I error upper bound alpha and the violation upper bound delta, \code{npc} calculate the Neyman-Pearson Classifier
-#' which control the type I error with in alpha with probability at least 1-delta
+#' Given a type I error upper bound alpha and a violation upper bound delta, \code{npc} calculates the Neyman-Pearson Classifier
+#' which controls the type I error under alpha with probability at least 1-delta.
 #' @export
 #' @importFrom e1071 svm
 #' @importFrom e1071 naiveBayes
@@ -23,7 +23,7 @@
 #' @importFrom graphics polygon
 #' @param x n * p observation matrix. n observations, p covariates.
 #' @param y n 0/1 observatons.
-#' @param method classification method.
+#' @param method base classification method.
 #' \itemize{
 #' \item logistic: Logistic regression. \link{glm} function with family = 'binomial'
 #' \item penlog: Penalized logistic regression with LASSO penalty. \code{\link[glmnet]{glmnet}} in \code{glmnet} package
@@ -32,23 +32,21 @@
 #' \item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
 #' \item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
 #' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
-#' \item custom: a custom classifier. score vector needed.
 #' }
-#' @param score score vector corresponding to y. Required when method  = 'custom'.
-#' @param alpha the desirable control on type I error. Default = 0.05.
+#' @param alpha the desirable upper bound on type I error. Default = 0.05.
 #' @param delta the violation rate of the type I error. Default = 0.05.
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
-#' version, choose split > 1.  When method = 'custom',  split = 0 always.
+#' version, choose split > 1.
 #' @param split.ratio the ratio of splits used for the class 0 sample to train the
-#' classifier. Default = 0.5.
+#' base classifier. The rest are used to estimate the threshold. Default = 0.5.
 #' @param n.cores number of cores used for parallel computing. Default = 1. WARNING:
 #' windows machine is not supported.
-#' @param nproc.para parameters passed from a nproc call. Default = NULL.
+#' @param band whether to generate both lower and upper bounds of type II error. Default #' = FALSE.
 #' @param randSeed the random seed used in the algorithm.
 #' @param ... additional arguments.
 #' @return An object with S3 class npc.
 #'  \item{fits}{a list of length max(1,split), represents the fit during each split.}
-#'  \item{method}{the classification method.}
+#'  \item{method}{the base classification method.}
 #'   \item{split}{the number of splits used.}
 #' @seealso \code{\link{nproc}} and \code{\link{predict.npc}}
 #' @references
@@ -63,7 +61,7 @@
 #' ctest = 1+3*xtest[,1]
 #' ytest = rbinom(n,1,1/(1+exp(-ctest)))
 #'
-#' ##Use svm classifier and the default type I error control with alpha=0.05
+#' ##Use svm classifier and the default type I error control with alpha=0.05, delta=0.05
 #' fit = npc(x, y, method = 'svm')
 #' pred = predict(fit,xtest)
 #' fit.score = predict(fit,x)
@@ -73,7 +71,7 @@
 #' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 #' cat('Type I error: ', typeI, '\n')
 #'
-#' ##Ensembled svm classifier with split = 11,  alpha=0.05
+#' ##Ensembled svm classifier with split = 11,  alpha=0.05, delta=0.05
 #' #fit = npc(x, y, method = 'svm', split = 11)
 #' #pred = predict(fit,xtest)
 #' #accuracy = mean(pred$pred.label==ytest)
@@ -100,33 +98,14 @@
 #' #typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 #' #cat('Type I error: ', typeI, '\n')
 #'
-#' ##A 'custom' npc classifier with y and score.
-#' #fit2 = npc(y = y, score = fit.score$pred.score, method = 'custom')
 
-npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda",
-    "nb", "ada", "tree", "custom"), score = NULL, alpha = 0.05,
-    delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, nproc.para = NULL, randSeed = 0, ...) {
+npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "ada", "tree", "custom"), alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, band  = FALSE, randSeed = 0, ...) {
     if (!is.null(x)) {
         x = as.matrix(x)
     }
     method = match.arg(method)
     set.seed(randSeed)
-    if (method == "custom" & is.null(score)) {
-        stop("score is needed when specifying method = \"custom\"")
-    }
-    if (!is.null(score)) {
-        ## custom method, user specifed score vector
-        obj = npc.core(y, score, alpha = alpha, delta = delta)
-        object = NULL
-        object$fits[[1]] = obj
-        object$split = 0
-        object$method = method
-        class(object) = "npc"
-        return(object)
-    } else {
-        ## not custom method
-        object = NULL
-        n = nrow(x)
+      object = NULL
         p = ncol(x)
         if (p == 1 & method == "penlog") {
             stop("glmnet does not support the one predictor case. ")
@@ -141,7 +120,6 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
                 n.cores = n.cores, ...)
         } else {
             ## with split
-
             n0.1 = round(n0 * split.ratio)  ##default size for calculating the classifier
             n1.1 = round(n1 * split.ratio)
 
@@ -158,11 +136,6 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
                 setdiff(ind1, ind11.mat[, i])
             })
             n0.cores = max(1, floor(n.cores/split))
-            if (is.null(nproc.para)){
-              band = FALSE
-            } else{
-              band = nproc.para$band
-            }
             if (band == TRUE) {
                 fits = mclapply(1:split, f <- function(i) {
                   npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
@@ -181,8 +154,4 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
         object$method = method
         class(object) = "npc"
         return(object)
-
-    }
-
-
 }

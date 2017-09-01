@@ -2,7 +2,7 @@
 % Please edit documentation in R/compare.R
 \name{compare}
 \alias{compare}
-\title{Compare two NP classification methods at different thresholds.}
+\title{Compare two NP classification methods at different type I error upper bounds.}
 \usage{
 compare(roc1, roc2, plot = TRUE, col1 = "black", col2 = "red")
 }
@@ -22,10 +22,9 @@ A list with the following items.
 \item{alpha1}{the alpha values where roc1 is significantly better than roc2. }
 \item{alpha2}{the alpha values where roc2 is significantly better than roc1. }
 \item{alpha3}{the alpha values where roc1 and roc2 are not significantly different.}
-\item{confidence}{represents the confidence level.}
 }
 \description{
-\code{compare} compares NP classification methods and provide the regions where one method is better than the other. The two NP-ROC curves are both required to have band = TRUE.
+\code{compare} compares NP classification methods and provides the regions where one method is better than the other.
 }
 \examples{
 n = 1000
@@ -33,8 +32,8 @@ set.seed(1)
 x1 = c(rnorm(n), rnorm(n) + 1)
 x2 = c(rnorm(n), rnorm(n)*sqrt(6) + 1)
 y = c(rep(0,n), rep(1,n))
-fit1 = nproc(x1, y, band = TRUE, method = 'lda')
-fit2 = nproc(x2, y, band = TRUE, method = 'lda')
+fit1 = nproc(x1, y, method = 'lda')
+fit2 = nproc(x2, y, method = 'lda')
 v = compare(fit1, fit2)
 legend('topleft',legend=c('x1','x2'),col=1:2,lty=c(1,1))
 
@@ -45,4 +44,3 @@ Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classific
 \seealso{
 \code{\link{npc}}, \code{\link{nproc}}, \code{\link{predict.npc}} and \code{\link{plot.nproc}}
 }
-

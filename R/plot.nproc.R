@@ -1,4 +1,4 @@
-#' Plot the nproc curve(s).
+#' Plot the nproc band(s).
 #' @export
 #' @method plot nproc
 #' @importFrom graphics legend
@@ -17,9 +17,8 @@
 plot.nproc <- function(x, ...) {
 
     plot(x$typeI.u, 1 - x$typeII.u, xlab = "FPR", ylab = "TPR", type = "l", ...)
-    if (x$band) {
-        lines(x$typeI.u, 1 - x$typeII.l, ...)
-    }
+
+    lines(x$typeI.u, 1 - x$typeII.l, ...)
 
 }
 

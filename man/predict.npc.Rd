@@ -48,4 +48,3 @@ ytest = rbinom(n,1,1/(1+exp(-ctest)))
 \seealso{
 \code{\link{npc}} and \code{\link{nproc}}
 }
-

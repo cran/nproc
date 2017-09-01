@@ -2,19 +2,19 @@
 % Please edit documentation in R/npc.R
 \name{npc}
 \alias{npc}
-\title{Calculate the Neyman-Pearson Classifier from a sample of class 0 and class 1.}
+\title{Construct a Neyman-Pearson Classifier from a sample of class 0 and class 1.}
 \usage{
 npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-  "lda", "nb", "ada", "tree", "custom"), score = NULL, alpha = 0.05,
-  delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1,
-  nproc.para = NULL, randSeed = 0, ...)
+  "lda", "nb", "ada", "tree", "custom"), alpha = 0.05, delta = 0.05,
+  split = 1, split.ratio = 0.5, n.cores = 1, band = FALSE,
+  randSeed = 0, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
 
 \item{y}{n 0/1 observatons.}
 
-\item{method}{classification method.
+\item{method}{base classification method.
 \itemize{
 \item logistic: Logistic regression. \link{glm} function with family = 'binomial'
 \item penlog: Penalized logistic regression with LASSO penalty. \code{\link[glmnet]{glmnet}} in \code{glmnet} package
@@ -23,25 +23,22 @@ npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 \item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
 \item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
 \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
-\item custom: a custom classifier. score vector needed.
 }}
 
-\item{score}{score vector corresponding to y. Required when method  = 'custom'.}
-
-\item{alpha}{the desirable control on type I error. Default = 0.05.}
+\item{alpha}{the desirable upper bound on type I error. Default = 0.05.}
 
 \item{delta}{the violation rate of the type I error. Default = 0.05.}
 
 \item{split}{the number of splits for the class 0 sample. Default = 1. For ensemble
-version, choose split > 1.  When method = 'custom',  split = 0 always.}
+version, choose split > 1.}
 
 \item{split.ratio}{the ratio of splits used for the class 0 sample to train the
-classifier. Default = 0.5.}
+base classifier. The rest are used to estimate the threshold. Default = 0.5.}
 
 \item{n.cores}{number of cores used for parallel computing. Default = 1. WARNING:
 windows machine is not supported.}
 
-\item{nproc.para}{parameters passed from a nproc call. Default = NULL.}
+\item{band}{whether to generate both lower and upper bounds of type II error. Default #' = FALSE.}
 
 \item{randSeed}{the random seed used in the algorithm.}
 
@@ -50,12 +47,12 @@ windows machine is not supported.}
 \value{
 An object with S3 class npc.
  \item{fits}{a list of length max(1,split), represents the fit during each split.}
- \item{method}{the classification method.}
+ \item{method}{the base classification method.}
   \item{split}{the number of splits used.}
 }
 \description{
-Give a type I error upper bound alpha and the violation upper bound delta, \code{npc} calculate the Neyman-Pearson Classifier
-which control the type I error with in alpha with probability at least 1-delta
+Given a type I error upper bound alpha and a violation upper bound delta, \code{npc} calculates the Neyman-Pearson Classifier
+which controls the type I error under alpha with probability at least 1-delta.
 }
 \examples{
 set.seed(1)
@@ -67,7 +64,7 @@ xtest = matrix(rnorm(n*2),n,2)
 ctest = 1+3*xtest[,1]
 ytest = rbinom(n,1,1/(1+exp(-ctest)))
 
-##Use svm classifier and the default type I error control with alpha=0.05
+##Use svm classifier and the default type I error control with alpha=0.05, delta=0.05
 fit = npc(x, y, method = 'svm')
 pred = predict(fit,xtest)
 fit.score = predict(fit,x)
@@ -77,7 +74,7 @@ ind0 = which(ytest==0)
 typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\\n')
 
-##Ensembled svm classifier with split = 11,  alpha=0.05
+##Ensembled svm classifier with split = 11,  alpha=0.05, delta=0.05
 #fit = npc(x, y, method = 'svm', split = 11)
 #pred = predict(fit,xtest)
 #accuracy = mean(pred$pred.label==ytest)
@@ -104,8 +101,6 @@ cat('Type I error: ', typeI, '\\n')
 #typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 #cat('Type I error: ', typeI, '\\n')
 
-##A 'custom' npc classifier with y and score.
-#fit2 = npc(y = y, score = fit.score$pred.score, method = 'custom')
 }
 \references{
 Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109.
@@ -113,4 +108,3 @@ Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classific
 \seealso{
 \code{\link{nproc}} and \code{\link{predict.npc}}
 }
-

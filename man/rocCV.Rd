@@ -42,7 +42,7 @@ A list.
 \item{tpr}{sequence of true positive rate.}
 }
 \description{
-\code{rocCV} calculate the receiver operating characterisitc with cross-validation
+\code{rocCV} calculates the receiver operating characterisitc with cross-validation
 }
 \examples{
 n = 200
@@ -59,4 +59,3 @@ Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classific
 \seealso{
 \code{\link{nproc}}
 }
-
