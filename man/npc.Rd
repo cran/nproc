@@ -64,8 +64,8 @@ xtest = matrix(rnorm(n*2),n,2)
 ctest = 1+3*xtest[,1]
 ytest = rbinom(n,1,1/(1+exp(-ctest)))
 
-##Use svm classifier and the default type I error control with alpha=0.05, delta=0.05
-fit = npc(x, y, method = 'svm')
+##Use lda classifier and the default type I error control with alpha=0.05, delta=0.05
+fit = npc(x, y, method = 'lda')
 pred = predict(fit,xtest)
 fit.score = predict(fit,x)
 accuracy = mean(pred$pred.label==ytest)
@@ -74,8 +74,8 @@ ind0 = which(ytest==0)
 typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\\n')
 
-##Ensembled svm classifier with split = 11,  alpha=0.05, delta=0.05
-#fit = npc(x, y, method = 'svm', split = 11)
+##Ensembled lda classifier with split = 11,  alpha=0.05, delta=0.05
+#fit = npc(x, y, method = 'lda', split = 11)
 #pred = predict(fit,xtest)
 #accuracy = mean(pred$pred.label==ytest)
 #cat('Overall Accuracy: ',  accuracy,'\\n')
@@ -108,3 +108,4 @@ Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classific
 \seealso{
 \code{\link{nproc}} and \code{\link{predict.npc}}
 }
+

@@ -61,8 +61,8 @@
 #' ctest = 1+3*xtest[,1]
 #' ytest = rbinom(n,1,1/(1+exp(-ctest)))
 #'
-#' ##Use svm classifier and the default type I error control with alpha=0.05, delta=0.05
-#' fit = npc(x, y, method = 'svm')
+#' ##Use lda classifier and the default type I error control with alpha=0.05, delta=0.05
+#' fit = npc(x, y, method = 'lda')
 #' pred = predict(fit,xtest)
 #' fit.score = predict(fit,x)
 #' accuracy = mean(pred$pred.label==ytest)
@@ -71,8 +71,8 @@
 #' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 #' cat('Type I error: ', typeI, '\n')
 #'
-#' ##Ensembled svm classifier with split = 11,  alpha=0.05, delta=0.05
-#' #fit = npc(x, y, method = 'svm', split = 11)
+#' ##Ensembled lda classifier with split = 11,  alpha=0.05, delta=0.05
+#' #fit = npc(x, y, method = 'lda', split = 11)
 #' #pred = predict(fit,xtest)
 #' #accuracy = mean(pred$pred.label==ytest)
 #' #cat('Overall Accuracy: ',  accuracy,'\n')
@@ -138,11 +138,13 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
             n0.cores = max(1, floor(n.cores/split))
             if (band == TRUE) {
                 fits = mclapply(1:split, f <- function(i) {
+                  set.seed(i + randSeed)
                   npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
                     i], ind11.mat[, i], ind12.mat[, i], method, n.cores = n0.cores, ...)
                 }, mc.cores = n.cores)
             } else {
                 fits = mclapply(1:split, f <- function(i) {
+                  set.seed(i + randSeed)
                   npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
                     i], ind1, ind1, method, n.cores = n0.cores, ...)
                 }, mc.cores = n.cores)

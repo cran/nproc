@@ -52,7 +52,7 @@ typeI = mean(pred$pred.label[ind0] != ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\n')
 
 ## ------------------------------------------------------------------------
-methodlist = c("logistic", "penlog", "svm", "randomforest",
+methodlist = c("logistic", "penlog", "randomforest", "svm", 
                                         "lda", "nb", "ada")
 for(method in methodlist){
 fit = npc(x, y, method = method, alpha = 0.05)
@@ -66,7 +66,7 @@ cat(method, ': Type I error: ', typeI, '\n')
 
 
 ## ------------------------------------------------------------------------
-fit = nproc(x, y, method = "svm")
+fit = nproc(x, y, method = "nb")
 plot(fit)
 
 ## ------------------------------------------------------------------------

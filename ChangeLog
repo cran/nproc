@@ -1,3 +1,6 @@
+2017-09-16 Yang Feng <yang.feng@columbia.edu> Version 2.0.9
+*speed up the calculation for order statistics
+*minor changes on plot legends and line width
 2017-08-17 Yang Feng <yang.feng@columbia.edu> Version 2.0.8
 *remove the custom option
 *remove the nproc line, only keeps the band version

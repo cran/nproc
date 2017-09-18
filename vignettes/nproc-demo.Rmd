@@ -1,7 +1,7 @@
 ---
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 <a id="top"></a>
 
@@ -151,7 +151,7 @@ cat('Type I error: ', typeI, '\n')
 
 Let's compare the performance of different methods on our simulated dataset. 
 ```{r}
-methodlist = c("logistic", "penlog", "svm", "randomforest",
+methodlist = c("logistic", "penlog", "randomforest", "svm", 
                                         "lda", "nb", "ada")
 for(method in methodlist){
 fit = npc(x, y, method = method, alpha = 0.05)
@@ -176,7 +176,7 @@ The function  `nproc` constructs Neyman-Pearson Receiver Operator Characteristic
 In the following demo, we use the same data as in the previous section. 
 
 ```{r}
-fit = nproc(x, y, method = "svm")
+fit = nproc(x, y, method = "nb")
 plot(fit)
 ```
 
@@ -201,6 +201,11 @@ fit1 = nproc(x1, y, split = 11, method = 'lda')
 fit2 = nproc(x2, y, split = 11, method = 'lda')
 v = compare(fit1, fit2)
 legend('topleft',legend = c(expression(X[1]),expression(X[2])),col = 1:2,lty = c(1,1))
+```
+
+Lastly, we have implemented a web-based interface using the shiny app. It can be invoked by the following command after the package is loaded. 
+```{eval = FALSE}
+shiny::runApp(system.file('nproc', package='nproc'))
 ```
 
 [Back to Top](#top)

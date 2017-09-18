@@ -20,11 +20,12 @@ npc.core <- function(y, score, alpha = NULL, delta = 0.05, n.cores = 1) {
 
   cutoff = NULL
   if (!is.null(alpha)) {
-    loc = max(which(obj$alpha.u <= alpha))
-    if (loc > 1) {
+    loc = min(which(obj$alpha.u <= alpha + 1e-10))
+    if (loc > 0) {
       cutoff = cutoff.list[loc]
     } else {
       cutoff = Inf
+      stop('Sample size is too small for the given alpha. Try a larger alpha.')
     }
   }
   return(list = list(cutoff = cutoff, loc = loc, sign = sig, alpha.l = obj$alpha.l, alpha.u = obj$alpha.u,
@@ -37,8 +38,7 @@ pred.npc.core <- function(object, newx = NULL) {
   } else if (object$method == "penlog") {
     pred.score = predict(object$fit$glmnet.fit, newx = newx, type = "response", s = object$fit$lambda.min)
   } else if (object$method == "svm") {
-    pred.score = attr(predict(object$fit, newx, decision.values = TRUE), "decision.values")[,
-                                                                                            1]
+    pred.score = attr(predict(object$fit, newx, decision.values = TRUE), "decision.values")[,1]
   } else if (object$method == "randomforest") {
     pred.score = predict(object$fit, newx, type = "prob")[, 2]
   } else if (object$method == "lda") {
@@ -134,68 +134,70 @@ getroc <- function(yhat, y) {
 ## find the order such that the type-I error bound is satisfied with probability at
 ## least 1-delta
 find.order <- function(score0, score1 = NULL, delta = 0.05, n.cores = 1) {
+  ##score0 contains all the candidate cutoffs for the classifier.
 
-
-  score0 = sort(score0, decreasing = TRUE)
-  score1 = sort(score1, decreasing = TRUE)
+  score0 = sort(score0)
+  score1 = sort(score1)
   n0 = length(score0)
   n1 = length(score1)
-  sd0 = sd(score0)
-  sd1 = sd(score1)
-
-  score0 = score0 + rnorm(n0, 0, sd0/100)
-  score1 = score1 + rnorm(n1, 0, sd1/100)
-
-  # scores = sort(c(score0,score1), decreasing = TRUE)
+  if(length(unique(score0))<10) { ##add small random noise if too few unique values.
+    sd0 = sd(score0)
+    sd1 = sd(score1)
+    score0 = score0 + rnorm(n0, sd = sd0*1e-6)
+    score1 = score1 + rnorm(n1, sd = sd1*1e-6)
+  }
   scores = score0
-  # n = n0 + n1 nc = n + 1 ###number of different classifiers
-  nc = n0 + 1  ###number of different classifiers
-  alpha.l = alpha.u = beta.l = beta.u = rep(0, nc)
-  alpha.l[1] = alpha.u[1] = 0
-  beta.l[1] = beta.u[1] = 1
-  alpha.l[nc] = alpha.u[nc] = 1
-  beta.l[nc] = beta.u[nc] = 0
+  alpha.l = alpha.u = beta.l = beta.u = rep(0, n0)
+  #alpha.l: type I error lower bound
+  #alpha.u: type I error upper bound
+  #beta.l: type II error lower bound
+  #beta.u: type II error upper bound
   v.list = seq(from = 0, to = 1, by = 0.001)
-  # ru0 = apply(outer(score0, scores, "<="), 2, sum)
-  # rl1 = apply(outer(score1, scores, "<="), 2, sum)
-  # rl0 = n0 + 1 - apply(outer(score0, scores, ">="), 2, sum)
-  # ru1 = n1 + 1 - apply(outer(score1, scores, ">="), 2, sum)
-  ru0 = mcmapply(function(s){sum(score0 <= s)}, scores, mc.cores = n.cores)
-  rl1 = mcmapply(function(s){sum(score1 <= s)}, scores, mc.cores = n.cores  )
-  rl0 = n0 + 1 - mcmapply(function(s){sum(score0 >= s)}, scores, mc.cores = n.cores)
-  ru1 = n1 + 1 - mcmapply(function(s){sum(score1 >= s)}, scores, mc.cores = n.cores)
+  #ru0 = mcmapply(function(s){sum(score0 <= s)}, scores, mc.cores = n.cores)
+  #rl0 = n0 + 1 - mcmapply(function(s){sum(score0 >= s)}, scores, mc.cores = n.cores)
+  ru0 = rank(score0, ties.method = 'max')
+  rl0 = rank(score0, ties.method = 'min')
+  rl1 = mcmapply(function(s){sum(score1 < s) + s %in% score1 }, scores, mc.cores = n.cores)
+  ru1 = mcmapply(function(s){sum(score1 < s) + max(1,sum(score1 == s)) }, scores, mc.cores = n.cores)
 
-  alpha.mat = mcmapply(f <- function(i) {
-    if (ru0[i] == 0) {
-      alpha.u = 1
-      alpha.l = 1
-    } else if (ru0[i] == n0) {
+
+  alpha.mat = mcmapply(f <- function(i){
+    if (ru0[i] == n0){
       alpha.l = 0
-      alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
-    } else {
-      alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
+    }  else {
       alpha.l = v.list[max(which(pbinom(n0 - rl0[i], n0, v.list) >= 1 - delta))]
     }
-    if (rl1[i] == n1) {
+    alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
+
+    # if (ru0[i] == 0) {
+    #   alpha.u = 1
+    #   alpha.l = v.list[max(which(pbinom(n0 - rl0[i], n0, v.list) >= 1 - delta))]
+    # } else if (rl0[i] == n0) {
+    #   alpha.l = 0
+    #   alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
+    # } else {
+    #   alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
+    #   alpha.l = v.list[max(which(pbinom(n0 - rl0[i], n0, v.list) >= 1 - delta))]
+    # }
+     if (ru1[i] >= n1) {
       beta.u = 1
-      beta.l = v.list[max(which(pbinom(rl1[i] - 1, n1, v.list) <= delta))]
+      beta.l = v.list[max(which(pbinom(rl1[i]-1, n1, v.list) >= 1 - delta))]
     } else if (rl1[i] == 0) {
+      beta.u = v.list[min(which(pbinom(ru1[i]-1, n1, v.list) <= delta))]
       beta.l = 0
-      beta.u = 0
     } else {
-      # beta.u[i] = v.list[which.max(1-pbinom(ru1[i], n1, v.list) >= 1-delta)]
-      beta.u = v.list[min(which(pbinom(ru1[i] - 1, n1, v.list) <= delta))]
-      beta.l = v.list[max(which(pbinom(rl1[i] - 1, n1, v.list) >= 1 - delta))]
+      beta.u = v.list[min(which(pbinom(ru1[i]-1, n1, v.list) <= delta))]
+      beta.l = v.list[max(which(pbinom(rl1[i]-1, n1, v.list) >= 1 - delta))]
     }
     c(alpha.l, alpha.u, beta.l, beta.u)
-  }, 2:n0, mc.cores = n.cores)
-  alpha.l[2:n0] = alpha.mat[1, ]
-  alpha.u[2:n0] = alpha.mat[2, ]
-  beta.l[2:n0] = alpha.mat[3, ]
-  beta.u[2:n0] = alpha.mat[4, ]
+  }, 1:n0, mc.cores = n.cores)
+  alpha.l = alpha.mat[1, ]
+  alpha.u = alpha.mat[2, ]
+  beta.l = alpha.mat[3, ]
+  beta.u = alpha.mat[4, ]
 
 
-  return(list(scores = scores, beta.l = beta.l, beta.u = beta.u, alpha.l = alpha.l, alpha.u = alpha.u))
+  return(list(scores = scores, beta.l = beta.l, beta.u = beta.u, alpha.l = alpha.l, alpha.u = alpha.u, ru1=ru1,rl1=rl1,ru0=ru0,rl0=rl0))
 
 }
 

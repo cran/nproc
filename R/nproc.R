@@ -69,7 +69,7 @@ nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfo
     }
     method = match.arg(method)
     set.seed(randSeed)
-    v = npc(x, y, method = method, delta = delta,
+    v = npc(x, y, method = method, alpha = 1, delta = delta,
         split = split, split.ratio = split.ratio, n.cores = n.cores, band = TRUE, randSeed = randSeed, ...)
 
     split = v$split
@@ -79,15 +79,19 @@ nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfo
 
     for (i in 1:max(split, 1)) {
         obj = v$fits[[i]]
-        beta.u[, i] = approx(obj$alpha.u, obj$beta.u, alphalist, method = "constant", rule = 2,
+        ref.alpha.l = c(0, obj$alpha.l, 1)
+        ref.beta.l = c(1, obj$beta.l, 0)
+        ref.beta.u = c(1, obj$beta.u, 0)
+        ref.alpha.u = c(0, obj$alpha.u, 1)
+        beta.u[, i] = approx(ref.alpha.u, ref.beta.u, alphalist, method = "constant", rule = 2,
             f = 0)$y
 
         typeI.lower = FALSE
             if (typeI.lower == FALSE) {
-                beta.l[, i] = approx(obj$alpha.u, obj$beta.l, alphalist, method = "constant",
+                beta.l[, i] = approx(ref.alpha.u, ref.beta.l, alphalist, method = "constant",
                   rule = 2, f = 1)$y
             } else {
-                beta.u[, i] = approx(obj$alpha.l, obj$beta.l, alphalist, method = "constant",
+                beta.u[, i] = approx(ref.alpha.l, ref.beta.l, alphalist, method = "constant",
                   rule = 2, f = 0)$y
             }
     }

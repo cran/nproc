@@ -31,9 +31,8 @@
 #' #cat('Type II error: ', typeII, '\n')
 
 predict.npc <- function(object, newx = NULL, ...) {
-    if (object$method == "custom") {
-        stop("prediction for method \"custom\" not supported.")
-    } else {
+
+        newx = as.matrix(newx)
         colnames(newx) <- paste("x", 1:ncol(newx), sep = "")
         if (object$split < 1) {
             pred = pred.npc.core(object, newx)
@@ -43,22 +42,22 @@ predict.npc <- function(object, newx = NULL, ...) {
             pred = pred.npc.core(object$fits[[1]], newx)
             pred.score = pred$pred.score
             pred.label = pred$pred.label
-            
+
             if (object$split > 1) {
                 for (i in 2:object$split) {
                   pred = pred.npc.core(object$fits[[i]], newx)
-                  
+
                   pred.label = pred.label + pred$pred.label
                   pred.score = pred.score + pred$pred.score
-                  
+
                 }
             }
             pred.label = (pred.label/object$split > 0.5)
             pred.score = pred.score/object$split
         }
-    }
-    
-    
+
+
+
     return(list(pred.label = pred.label, pred.score = pred.score))
-    
+
 }

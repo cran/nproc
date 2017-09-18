@@ -37,8 +37,8 @@ compare <- function(roc1, roc2, plot = TRUE, col1 = "black", col2 = "red") {
       stop("The two nproc objects need to have the same delta.")
     }
     if (plot == TRUE) {
-        plot(roc1, col = col1)
-        lines(roc2, col = col2)
+        plot(roc1, col = col1, lwd = 2)
+        lines(roc2, col = col2, lwd = 2)
     }
 
     n.alpha = length(alphalist)
