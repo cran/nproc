@@ -1,3 +1,8 @@
+2018-02-13 Yang Feng <yang.feng@columbia.edu> Version 2.1.1
+*added the slda classifier and the nonparametric naive bayes classifier
+*added the adaptive split ratio option
+2017-09-23 Yang Feng <yang.feng@columbia.edu> Version 2.1
+*change the option of shiny for split numbers
 2017-09-16 Yang Feng <yang.feng@columbia.edu> Version 2.0.9
 *speed up the calculation for order statistics
 *minor changes on plot legends and line width

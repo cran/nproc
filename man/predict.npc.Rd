@@ -32,20 +32,22 @@ xtest = matrix(rnorm(n*2),n,2)
 ctest = 1+3*xtest[,1]
 ytest = rbinom(n,1,1/(1+exp(-ctest)))
 
+
+\dontrun{
 ##Use logistic classifier and the default type I error control with alpha=0.05
-#fit = npc(x, y, method = 'logistic')
-#pred = predict(fit,xtest)
-#fit.score = predict(fit,x)
-#accuracy = mean(pred$pred.label==ytest)
-#cat('Overall Accuracy: ',  accuracy,'\\n')
-#ind0 = which(ytest==0)
-#ind1 = which(ytest==1)
-#typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#cat('Type I error: ', typeI, '\\n')
-#typeII = mean(pred$pred.label[ind1]!=ytest[ind1]) #type II error on test set
-#cat('Type II error: ', typeII, '\\n')
+fit = npc(x, y, method = 'logistic')
+pred = predict(fit,xtest)
+fit.score = predict(fit,x)
+accuracy = mean(pred$pred.label==ytest)
+cat('Overall Accuracy: ',  accuracy,'\\n')
+ind0 = which(ytest==0)
+ind1 = which(ytest==1)
+typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+cat('Type I error: ', typeI, '\\n')
+typeII = mean(pred$pred.label[ind1]!=ytest[ind1]) #type II error on test set
+cat('Type II error: ', typeII, '\\n')
+}
 }
 \seealso{
 \code{\link{npc}} and \code{\link{nproc}}
 }
-

@@ -5,9 +5,9 @@
 \title{Construct a Neyman-Pearson Classifier from a sample of class 0 and class 1.}
 \usage{
 npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-  "lda", "nb", "ada", "tree", "custom"), alpha = 0.05, delta = 0.05,
+  "lda", "slda", "nb", "nnb", "ada", "tree"), alpha = 0.05, delta = 0.05,
   split = 1, split.ratio = 0.5, n.cores = 1, band = FALSE,
-  randSeed = 0, ...)
+  randSeed = 0, warning = TRUE, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -20,8 +20,10 @@ npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 \item penlog: Penalized logistic regression with LASSO penalty. \code{\link[glmnet]{glmnet}} in \code{glmnet} package
 \item svm: Support Vector Machines. \code{\link[e1071]{svm}} in \code{e1071} package
 \item randomforest: Random Forest. \code{\link[randomForest]{randomForest}} in \code{randomForest} package
-\item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
+\item lda: Linear Discriminant Analysis. \code{\link[MASS]{lda}} in \code{MASS} package
+\item slda: Sparse Linear Discriminant Analysis with LASSO penalty.
 \item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
+\item nnb: Nonparametric Naive Bayes. \code{\link[naivebayes]{naive_bayes}} in \code{naivebayes} package
 \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 }}
 
@@ -33,7 +35,7 @@ npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
 version, choose split > 1.}
 
 \item{split.ratio}{the ratio of splits used for the class 0 sample to train the
-base classifier. The rest are used to estimate the threshold. Default = 0.5.}
+base classifier. The rest are used to estimate the threshold. Can also be set to be "adaptive", which will be determined using a data-driven method implemented in \code{find.optim.split}. Default = 0.5.}
 
 \item{n.cores}{number of cores used for parallel computing. Default = 1. WARNING:
 windows machine is not supported.}
@@ -41,6 +43,8 @@ windows machine is not supported.}
 \item{band}{whether to generate both lower and upper bounds of type II error. Default #' = FALSE.}
 
 \item{randSeed}{the random seed used in the algorithm.}
+
+\item{warning}{whether to show various warnings in the program. Default = TRUE.}
 
 \item{...}{additional arguments.}
 }
@@ -74,14 +78,15 @@ ind0 = which(ytest==0)
 typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\\n')
 
+\dontrun{
 ##Ensembled lda classifier with split = 11,  alpha=0.05, delta=0.05
-#fit = npc(x, y, method = 'lda', split = 11)
-#pred = predict(fit,xtest)
-#accuracy = mean(pred$pred.label==ytest)
-#cat('Overall Accuracy: ',  accuracy,'\\n')
-#ind0 = which(ytest==0)
-#typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#cat('Type I error: ', typeI, '\\n')
+fit = npc(x, y, method = 'lda', split = 11)
+pred = predict(fit,xtest)
+accuracy = mean(pred$pred.label==ytest)
+cat('Overall Accuracy: ',  accuracy,'\\n')
+ind0 = which(ytest==0)
+typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+cat('Type I error: ', typeI, '\\n')
 
 ##Now, change the method to logistic regression and change alpha to 0.1
 fit = npc(x, y, method = 'logistic', alpha = 0.1)
@@ -93,19 +98,28 @@ typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 cat('Type I error: ', typeI, '\\n')
 
 ##Now, change the method to adaboost
-#fit = npc(x, y, method = 'ada', alpha = 0.1)
-#pred = predict(fit,xtest)
-#accuracy = mean(pred$pred.label==ytest)
-#cat('Overall Accuracy: ',  accuracy,'\\n')
-#ind0 = which(ytest==0)
-#typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#cat('Type I error: ', typeI, '\\n')
+fit = npc(x, y, method = 'ada', alpha = 0.1)
+pred = predict(fit,xtest)
+accuracy = mean(pred$pred.label==ytest)
+cat('Overall Accuracy: ',  accuracy,'\\n')
+ind0 = which(ytest==0)
+typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+cat('Type I error: ', typeI, '\\n')
 
+##Now, try the adaptive splitting ratio
+fit = npc(x, y, method = 'ada', alpha = 0.1, split.ratio = 'adaptive')
+pred = predict(fit,xtest)
+accuracy = mean(pred$pred.label==ytest)
+cat('Overall Accuracy: ',  accuracy,'\\n')
+ind0 = which(ytest==0)
+typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+cat('Type I error: ', typeI, '\\n')
+cat('Splitting ratio:', fit$split.ratio)
+}
 }
 \references{
-Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109.
+Xin Tong, Yang Feng, and Jingyi Jessica Li (2018), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), \emph{Science Advances}, \bold{4}, 2, eaao1659.
 }
 \seealso{
 \code{\link{nproc}} and \code{\link{predict.npc}}
 }
-

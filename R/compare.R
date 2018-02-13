@@ -13,7 +13,7 @@
 #' \item{alpha3}{the alpha values where roc1 and roc2 are not significantly different.}
 #' @seealso \code{\link{npc}}, \code{\link{nproc}}, \code{\link{predict.npc}} and \code{\link{plot.nproc}}
 #' @references
-#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC) curves, manuscript, http://arxiv.org/abs/1608.03109.
+#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2018), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), \emph{Science Advances}, \bold{4}, 2, eaao1659.
 #' @examples
 #' n = 1000
 #' set.seed(1)

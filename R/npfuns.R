@@ -1,4 +1,53 @@
-npc.core <- function(y, score, alpha = NULL, delta = 0.05, n.cores = 1) {
+find.optim.split <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "slda", "nb", "nnb", "ada", "tree"), alpha = 0.05, delta = 0.05, split = 1, split.ratio.seq = seq(from=0.1,to=0.9,by=0.1), nfolds = 10, band  = FALSE, randSeed = 0, ...){
+  if (!is.null(x)) {
+    x = as.matrix(x)
+  }
+  method = match.arg(method)
+  set.seed(randSeed)
+   n = length(y)
+   object = NULL
+   p = ncol(x)
+   ind0 = which(y == 0)  ##indices for class 0
+   ind1 = which(y == 1)  ##indices for class 1
+   n0 = length(ind0)
+   n1 = length(ind1)
+
+   foldid = sample(rep(seq(nfolds), length = n1))
+
+   n.split.ratio = length(split.ratio.seq)
+
+   error = matrix(1.1, n.split.ratio,nfolds)
+   for(i in 1:nfolds){
+     which = foldid == i
+
+     testind = ind1[which]
+     xtrain = x[-testind,]
+     ytrain = y[-testind]
+     xtest = x[testind,]
+     ytest = y[testind]
+
+   for(split.ind in 1:n.split.ratio){
+     fit = npc(x = xtrain, y = ytrain, method = method, alpha = alpha, delta = delta, split = split, split.ratio = split.ratio.seq[split.ind], band  = band, randSeed = randSeed, ...)
+     if(fit$nsmall==FALSE){
+       pred = predict(fit,xtest)
+       error[split.ind, i] = mean(pred$pred.label!=ytest)
+     }
+   }
+
+   }
+   errorm = apply(error,1,mean)
+   errorse = apply(error,1,sd)/sqrt(nfolds)
+   loc.min = which.min(errorm)
+   locs = which(errorm<errorm[loc.min]+2*errorse[loc.min])
+   loc.1se = locs[which.min(abs(split.ratio.seq[locs]-0.5))]
+   #loc.1se = min(which(errorm==max(errorm[locs])))
+   split.ratio.min = split.ratio.seq[loc.min]
+   split.ratio.1se = split.ratio.seq[loc.1se]
+   #optim.split.ratio = split.ratio.seq[which.min(errorm)]
+   list(split.ratio.min=split.ratio.min, split.ratio.1se = split.ratio.1se, errorm = errorm, errorse = errorse)
+}
+
+npc.core <- function(y, score, alpha = NULL, delta = 0.05, n.cores = 1, warning = TRUE) {
 
   ind0 = which(y == 0)
   ind1 = which(y == 1)
@@ -19,17 +68,25 @@ npc.core <- function(y, score, alpha = NULL, delta = 0.05, n.cores = 1) {
 
 
   cutoff = NULL
+  alpha.n = length(obj$alpha.u)
+  #min.alpha = sort(obj$alpha.u,partial=2)[2]
+  min.alpha = min(obj$alpha.u)
+  nsmall = FALSE
   if (!is.null(alpha)) {
-    loc = min(which(obj$alpha.u <= alpha + 1e-10))
-    if (loc > 0) {
-      cutoff = cutoff.list[loc]
-    } else {
+    if (min.alpha > alpha + 1e-10){
       cutoff = Inf
-      stop('Sample size is too small for the given alpha. Try a larger alpha.')
+      loc = length(ind0)
+      nsmall = TRUE
+      if(warning){
+        warning('Sample size is too small for the given alpha. Try a larger alpha.')
+      }
+    } else{
+      loc = min(which(obj$alpha.u <= alpha + 1e-10))
+      cutoff = cutoff.list[loc]
     }
   }
   return(list = list(cutoff = cutoff, loc = loc, sign = sig, alpha.l = obj$alpha.l, alpha.u = obj$alpha.u,
-                     beta.l = obj$beta.l, beta.u = obj$beta.u))
+                     beta.l = obj$beta.l, beta.u = obj$beta.u, nsmall = nsmall))
 }
 
 pred.npc.core <- function(object, newx = NULL) {
@@ -43,8 +100,12 @@ pred.npc.core <- function(object, newx = NULL) {
     pred.score = predict(object$fit, newx, type = "prob")[, 2]
   } else if (object$method == "lda") {
     pred.score = predict(object$fit, data.frame(newx))$posterior[, 2]
+  } else if (object$method == "slda") {
+    pred.score = predict(object$fit$glmnet.fit, newx = newx, s = object$fit$lambda.min)
   } else if (object$method == "nb") {
-    pred.score = predict(object$fit, data.frame(newx), type = "raw")[, 2]
+    pred.score = predict(object$fit, data.frame(newx), type = "prob")[, 2]
+  } else if (object$method == "nnb") {
+    pred.score = predict(object$fit, data.frame(newx), type = "prob")[, 2]
   } else if (object$method == "ada") {
     pred.score = predict(object$fit, data.frame(newx), type = "probs")[, 2]
   } else if (object$method == 'tree'){
@@ -79,9 +140,24 @@ classification.core <- function(method, train.x, train.y, test.x, ...){
   } else if (method == "lda") {
     fit = lda(train.x, train.y)
     test.score = predict(fit, data.frame(test.x))$posterior[, 2]
+  } else if (method == "slda") {
+    n1 = sum(train.y==1)
+    n0 = sum(train.y==0)
+    n = n1 + n0
+    lda.y = train.y
+    lda.y[train.y == 0] = -n/n0
+    lda.y[train.y == 1] = n/n1
+    fit = cv.glmnet(train.x, lda.y, ...)
+    test.score = predict(fit$glmnet.fit, newx = test.x, type = "link", s =       fit$lambda.min)
+    test.score = as.vector(test.score)
   } else if (method == "nb") {
-    fit = naiveBayes(train.x, train.y)
-    test.score = predict(fit, data.frame(test.x), type = "raw")[, 2]
+    train.data = data.frame(train.x, y = train.y)
+    fit <- naive_bayes(as.factor(y) ~ ., data = train.data, usekernel = FALSE)
+    test.score = predict(fit, data.frame(test.x), type = "prob")[,2]
+  } else if (method == "nnb") {
+    train.data = data.frame(train.x, y = train.y)
+    fit <- naive_bayes(as.factor(y) ~ ., data = train.data, usekernel = TRUE)
+    test.score = predict(fit, data.frame(test.x), type = "prob")[,2]
   } else if (method == "ada") {
     train.data = data.frame(train.x, y = train.y)
     fit = ada(y ~ ., data = train.data)
@@ -96,7 +172,7 @@ classification.core <- function(method, train.x, train.y, test.x, ...){
 }
 
 npc.split <- function(x, y, p, alpha, delta, ind01, ind02, ind11, ind12, method,
-                      n.cores = 1, ...) {
+                      n.cores = 1, warning = TRUE, ...) {
   train.ind = c(ind01, ind11)
   test.ind = c(ind02, ind12)
   train.x = x[train.ind, , drop = FALSE]
@@ -108,11 +184,11 @@ npc.split <- function(x, y, p, alpha, delta, ind01, ind02, ind11, ind12, method,
   class.obj = classification.core(method, train.x, train.y, test.x, ...)
   fit = class.obj$fit
   test.score = class.obj$test.score
-  obj = npc.core(test.y, test.score, alpha = alpha, delta = delta, n.cores = n.cores)
+  obj = npc.core(test.y, test.score, alpha = alpha, delta = delta, n.cores = n.cores, warning = warning)
 
   object = list(fit = fit, y = test.y, score = test.score, cutoff = obj$cutoff,
                 sign = obj$sign, method = method, beta.l = obj$beta.l, beta.u = obj$beta.u, alpha.l = obj$alpha.l,
-                alpha.u = obj$alpha.u)
+                alpha.u = obj$alpha.u, nsmall = obj$nsmall)
   class(object) = "npc"
   return(object)
 }
@@ -143,8 +219,8 @@ find.order <- function(score0, score1 = NULL, delta = 0.05, n.cores = 1) {
   if(length(unique(score0))<10) { ##add small random noise if too few unique values.
     sd0 = sd(score0)
     sd1 = sd(score1)
-    score0 = score0 + rnorm(n0, sd = sd0*1e-6)
-    score1 = score1 + rnorm(n1, sd = sd1*1e-6)
+    score0 = score0 + rnorm(n0, sd = max(1, sd0)*1e-6)
+    score1 = score1 + rnorm(n1, sd = max(1, sd1)*1e-6)
   }
   scores = score0
   alpha.l = alpha.u = beta.l = beta.u = rep(0, n0)

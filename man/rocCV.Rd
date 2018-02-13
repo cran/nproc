@@ -54,9 +54,8 @@ fit2 = rocCV(x, y, method = 'penlog')
 fit3 = rocCV(x, y, method = 'penlog', metric = 'SS')
 }
 \references{
-Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109
+Xin Tong, Yang Feng, and Jingyi Jessica Li (2018), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), \emph{Science Advances}, \bold{4}, 2, eaao1659.
 }
 \seealso{
 \code{\link{nproc}}
 }
-

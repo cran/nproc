@@ -1,0 +1,21 @@
+bibentry(bibtype = "Article",
+  title        = "Neyman-Pearson classification algorithms and NP receiver operating characteristics",
+  author       = c(person(given = c("Xin"),
+                          family = "Tong",
+                          email = "xint@marshall.usc.edu"),
+                   person(given = "Yang",
+                          family = "Feng",
+                          email = "yang.feng@columbia.edu"),
+		   person(given = c("Jingyi", "Jessica"),
+                          family = "Li",
+                          email = "jli@stat.ucla.edu")	),
+  journal      = "Science Advances",
+  year         = "2018",
+  volume       = "4",
+  number       = "2",
+  pages        = "eaao1659",
+  doi          = "10.1126/sciadv.aao1659",
+
+  header       = "To cite nproc in publications use:"
+)
+

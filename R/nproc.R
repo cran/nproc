@@ -13,6 +13,7 @@
 #' \item randomforest: Random Forest. \code{\link[randomForest]{randomForest}} in \code{randomForest} package
 #' \item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
 #' \item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
+#' \item nnb: Nonparametric Naive Bayes. \code{\link[naivebayes]{naive_bayes}} in \code{naivebayes} package
 #' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 #' }
 #' @param delta the violation rate of the type I error. Default = 0.05.
@@ -33,7 +34,7 @@
 #' \item{delta}{the violation rate.}
 #' @seealso \code{\link{npc}}
 #' @references
-#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109
+#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2018), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), \emph{Science Advances}, \bold{4}, 2, eaao1659.
 #' @examples
 #' n = 200
 #' x = matrix(rnorm(n*2),n,2)
@@ -44,22 +45,24 @@
 #' ##Plot the nproc curve
 #' plot(fit2)
 #'
-#'
-#' #fit3 = nproc(x, y, method = 'penlog',  n.cores = 2)
+#' \dontrun{
+#' fit3 = nproc(x, y, method = 'penlog',  n.cores = 2)
 #' #In practice, replace 2 by the number of cores available 'detectCores()'
-#' #fit4 = nproc(x, y, method = 'penlog', n.cores = detectCores())
+#' fit4 = nproc(x, y, method = 'penlog', n.cores = detectCores())
 #'
 #' #Confidence nproc curves
-#' #fit6 = nproc(x, y, method = 'lda')
-#' #plot(fit6)
-#' #nproc ensembled version
-#' #fit7 = nproc(x, y, method = 'lda', split = 11)
-#' #plot(fit7)
+#' fit6 = nproc(x, y, method = 'lda')
+#' plot(fit6)
+#' nproc ensembled version
+#' fit7 = nproc(x, y, method = 'lda', split = 11)
+#' plot(fit7)
+#' }
+#'
 
 
 
 
-nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "ada", "tree"), delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0, ...) {
+nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "nnb","ada", "tree"), delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0, ...) {
     if (!is.null(x)) {
         x = as.matrix(x)
         p = ncol(x)
@@ -109,5 +112,6 @@ nproc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfo
 
     object = list(typeII.u = beta.u.m, typeII.l = beta.l.m, auc.l = auc.l, auc.u = auc.u, method = method, typeI.u = alphalist, delta = delta, v = v)
     class(object) = "nproc"
+    rm(.Random.seed, envir=.GlobalEnv)
     return(object)
 }

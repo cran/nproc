@@ -5,6 +5,7 @@
 #' @export
 #' @importFrom e1071 svm
 #' @importFrom e1071 naiveBayes
+#' @importFrom naivebayes naive_bayes
 #' @importFrom glmnet cv.glmnet
 #' @importFrom MASS lda
 #' @importFrom randomForest randomForest
@@ -29,8 +30,10 @@
 #' \item penlog: Penalized logistic regression with LASSO penalty. \code{\link[glmnet]{glmnet}} in \code{glmnet} package
 #' \item svm: Support Vector Machines. \code{\link[e1071]{svm}} in \code{e1071} package
 #' \item randomforest: Random Forest. \code{\link[randomForest]{randomForest}} in \code{randomForest} package
-#' \item Linear Discriminant Analysis. lda: \code{\link[MASS]{lda}} in \code{MASS} package
+#' \item lda: Linear Discriminant Analysis. \code{\link[MASS]{lda}} in \code{MASS} package
+#' \item slda: Sparse Linear Discriminant Analysis with LASSO penalty.
 #' \item nb: Naive Bayes. \code{\link[e1071]{naiveBayes}} in \code{e1071} package
+#' \item nnb: Nonparametric Naive Bayes. \code{\link[naivebayes]{naive_bayes}} in \code{naivebayes} package
 #' \item ada: Ada-Boost. \code{\link[ada]{ada}} in \code{ada} package
 #' }
 #' @param alpha the desirable upper bound on type I error. Default = 0.05.
@@ -38,11 +41,12 @@
 #' @param split the number of splits for the class 0 sample. Default = 1. For ensemble
 #' version, choose split > 1.
 #' @param split.ratio the ratio of splits used for the class 0 sample to train the
-#' base classifier. The rest are used to estimate the threshold. Default = 0.5.
+#' base classifier. The rest are used to estimate the threshold. Can also be set to be "adaptive", which will be determined using a data-driven method implemented in \code{find.optim.split}. Default = 0.5.
 #' @param n.cores number of cores used for parallel computing. Default = 1. WARNING:
 #' windows machine is not supported.
 #' @param band whether to generate both lower and upper bounds of type II error. Default #' = FALSE.
 #' @param randSeed the random seed used in the algorithm.
+#' @param warning whether to show various warnings in the program. Default = TRUE.
 #' @param ... additional arguments.
 #' @return An object with S3 class npc.
 #'  \item{fits}{a list of length max(1,split), represents the fit during each split.}
@@ -50,7 +54,7 @@
 #'   \item{split}{the number of splits used.}
 #' @seealso \code{\link{nproc}} and \code{\link{predict.npc}}
 #' @references
-#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109.
+#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2018), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), \emph{Science Advances}, \bold{4}, 2, eaao1659.
 #' @examples
 #' set.seed(1)
 #' n = 1000
@@ -71,14 +75,15 @@
 #' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
 #' cat('Type I error: ', typeI, '\n')
 #'
+#' \dontrun{
 #' ##Ensembled lda classifier with split = 11,  alpha=0.05, delta=0.05
-#' #fit = npc(x, y, method = 'lda', split = 11)
-#' #pred = predict(fit,xtest)
-#' #accuracy = mean(pred$pred.label==ytest)
-#' #cat('Overall Accuracy: ',  accuracy,'\n')
-#' #ind0 = which(ytest==0)
-#' #typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#' #cat('Type I error: ', typeI, '\n')
+#' fit = npc(x, y, method = 'lda', split = 11)
+#' pred = predict(fit,xtest)
+#' accuracy = mean(pred$pred.label==ytest)
+#' cat('Overall Accuracy: ',  accuracy,'\n')
+#' ind0 = which(ytest==0)
+#' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#' cat('Type I error: ', typeI, '\n')
 #'
 #' ##Now, change the method to logistic regression and change alpha to 0.1
 #' fit = npc(x, y, method = 'logistic', alpha = 0.1)
@@ -90,22 +95,39 @@
 #' cat('Type I error: ', typeI, '\n')
 #'
 #' ##Now, change the method to adaboost
-#' #fit = npc(x, y, method = 'ada', alpha = 0.1)
-#' #pred = predict(fit,xtest)
-#' #accuracy = mean(pred$pred.label==ytest)
-#' #cat('Overall Accuracy: ',  accuracy,'\n')
-#' #ind0 = which(ytest==0)
-#' #typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
-#' #cat('Type I error: ', typeI, '\n')
+#' fit = npc(x, y, method = 'ada', alpha = 0.1)
+#' pred = predict(fit,xtest)
+#' accuracy = mean(pred$pred.label==ytest)
+#' cat('Overall Accuracy: ',  accuracy,'\n')
+#' ind0 = which(ytest==0)
+#' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#' cat('Type I error: ', typeI, '\n')
 #'
+#' ##Now, try the adaptive splitting ratio
+#' fit = npc(x, y, method = 'ada', alpha = 0.1, split.ratio = 'adaptive')
+#' pred = predict(fit,xtest)
+#' accuracy = mean(pred$pred.label==ytest)
+#' cat('Overall Accuracy: ',  accuracy,'\n')
+#' ind0 = which(ytest==0)
+#' typeI = mean(pred$pred.label[ind0]!=ytest[ind0]) #type I error on test set
+#' cat('Type I error: ', typeI, '\n')
+#' cat('Splitting ratio:', fit$split.ratio)
+#' }
 
-npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "nb", "ada", "tree", "custom"), alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, band  = FALSE, randSeed = 0, ...) {
+npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "slda", "nb", "nnb", "ada", "tree"), alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, band  = FALSE, randSeed = 0, warning = TRUE, ...) {
     if (!is.null(x)) {
         x = as.matrix(x)
     }
     method = match.arg(method)
+
+    object = NULL
+    if(split.ratio == 'adaptive'){
+      obj = find.optim.split(x = x, y = y, method = method, alpha = alpha, delta = delta, split = split, split.ratio.seq = seq(from=0.1,to=0.9,by=0.1), band  = band, randSeed = randSeed, warning = FALSE, ...)
+      split.ratio = obj$split.ratio.min
+      object$errors = obj$errorm
+    }
+
     set.seed(randSeed)
-      object = NULL
         p = ncol(x)
         if (p == 1 & method == "penlog") {
             stop("glmnet does not support the one predictor case. ")
@@ -117,7 +139,7 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
         if (split == 0) {
             ## no split, use all class 0 obs for training and for calculating the cutoff
             fits = npc.split(x, y, p, alpha, delta, ind0, ind0, ind1, ind1, method,
-                n.cores = n.cores, ...)
+                n.cores = n.cores, warning = warning, ...)
         } else {
             ## with split
             n0.1 = round(n0 * split.ratio)  ##default size for calculating the classifier
@@ -140,13 +162,13 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
                 fits = mclapply(1:split, f <- function(i) {
                   set.seed(i + randSeed)
                   npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
-                    i], ind11.mat[, i], ind12.mat[, i], method, n.cores = n0.cores, ...)
+                    i], ind11.mat[, i], ind12.mat[, i], method, n.cores = n0.cores, warning = warning, ...)
                 }, mc.cores = n.cores)
             } else {
                 fits = mclapply(1:split, f <- function(i) {
                   set.seed(i + randSeed)
                   npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
-                    i], ind1, ind1, method, n.cores = n0.cores, ...)
+                    i], ind1, ind1, method, n.cores = n0.cores, warning = warning, ...)
                 }, mc.cores = n.cores)
             }
 
@@ -154,6 +176,9 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
         object$fits = fits
         object$split = split
         object$method = method
+        object$nsmall = fits[[1]]$nsmall
+        object$split.ratio = split.ratio
         class(object) = "npc"
+        rm(.Random.seed, envir=.GlobalEnv)
         return(object)
 }

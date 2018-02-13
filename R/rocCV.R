@@ -27,7 +27,7 @@
 #' \item{tpr}{sequence of true positive rate.}
 #' @seealso \code{\link{nproc}}
 #' @references
-#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2016), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), manuscript, http://arxiv.org/abs/1608.03109
+#' Xin Tong, Yang Feng, and Jingyi Jessica Li (2018), Neyman-Pearson (NP) classification algorithms and NP receiver operating characteristic (NP-ROC), \emph{Science Advances}, \bold{4}, 2, eaao1659.
 #' @examples
 #' n = 200
 #' x = matrix(rnorm(n*2),n,2)
@@ -86,5 +86,6 @@ rocCV <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfo
     roc.cv.fpr = common.fpr.list
 
     object = list(fpr = roc.cv.fpr, tpr = roc.cv.tpr)
+    rm(.Random.seed, envir=.GlobalEnv)
     return(object)
 }
