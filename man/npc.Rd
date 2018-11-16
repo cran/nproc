@@ -4,10 +4,11 @@
 \alias{npc}
 \title{Construct a Neyman-Pearson Classifier from a sample of class 0 and class 1.}
 \usage{
-npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
-  "lda", "slda", "nb", "nnb", "ada", "tree"), alpha = 0.05, delta = 0.05,
-  split = 1, split.ratio = 0.5, n.cores = 1, band = FALSE,
-  randSeed = 0, warning = TRUE, ...)
+npc(x = NULL, y, method = c("logistic", "penlog", "svm",
+  "randomforest", "lda", "slda", "nb", "nnb", "ada", "tree"),
+  alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5,
+  n.cores = 1, band = FALSE, nfolds = 10, randSeed = 0,
+  warning = TRUE, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
@@ -40,7 +41,9 @@ base classifier. The rest are used to estimate the threshold. Can also be set to
 \item{n.cores}{number of cores used for parallel computing. Default = 1. WARNING:
 windows machine is not supported.}
 
-\item{band}{whether to generate both lower and upper bounds of type II error. Default #' = FALSE.}
+\item{band}{whether to generate both lower and upper bounds of type II error. Default = FALSE.}
+
+\item{nfolds}{number of folds for performing adaptive split ratio selection. Default = 10.}
 
 \item{randSeed}{the random seed used in the algorithm.}
 

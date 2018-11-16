@@ -44,7 +44,8 @@
 #' base classifier. The rest are used to estimate the threshold. Can also be set to be "adaptive", which will be determined using a data-driven method implemented in \code{find.optim.split}. Default = 0.5.
 #' @param n.cores number of cores used for parallel computing. Default = 1. WARNING:
 #' windows machine is not supported.
-#' @param band whether to generate both lower and upper bounds of type II error. Default #' = FALSE.
+#' @param band whether to generate both lower and upper bounds of type II error. Default = FALSE.
+#' @param nfolds number of folds for performing adaptive split ratio selection. Default = 10.
 #' @param randSeed the random seed used in the algorithm.
 #' @param warning whether to show various warnings in the program. Default = TRUE.
 #' @param ... additional arguments.
@@ -114,15 +115,17 @@
 #' cat('Splitting ratio:', fit$split.ratio)
 #' }
 
-npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "slda", "nb", "nnb", "ada", "tree"), alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, band  = FALSE, randSeed = 0, warning = TRUE, ...) {
+npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest", "lda", "slda", "nb", "nnb", "ada", "tree"), alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5, n.cores = 1, band  = FALSE, nfolds = 10, randSeed = 0, warning = TRUE, ...) {
     if (!is.null(x)) {
         x = as.matrix(x)
     }
     method = match.arg(method)
-
+    if (length(alpha)>1){
+      stop('alpha must be a scalar.')
+    }
     object = NULL
     if(split.ratio == 'adaptive'){
-      obj = find.optim.split(x = x, y = y, method = method, alpha = alpha, delta = delta, split = split, split.ratio.seq = seq(from=0.1,to=0.9,by=0.1), band  = band, randSeed = randSeed, warning = FALSE, ...)
+      obj = find.optim.split(x = x, y = y, method = method, alpha = alpha, delta = delta, split = split, split.ratio.seq = seq(from=0.1,to=0.9,by=0.1), nfolds = nfolds, band  = band, randSeed = randSeed, warning = FALSE, ...)
       split.ratio = obj$split.ratio.min
       object$errors = obj$errorm
     }
@@ -138,7 +141,7 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
         n1 = length(ind1)
         if (split == 0) {
             ## no split, use all class 0 obs for training and for calculating the cutoff
-            fits = npc.split(x, y, p, alpha, delta, ind0, ind0, ind1, ind1, method,
+            fits = npc.split(x, y, p, alpha, delta, ind0, ind0, ind1, ind1, method, band  = band,
                 n.cores = n.cores, warning = warning, ...)
         } else {
             ## with split
@@ -162,13 +165,13 @@ npc <- function(x = NULL, y, method = c("logistic", "penlog", "svm", "randomfore
                 fits = mclapply(1:split, f <- function(i) {
                   set.seed(i + randSeed)
                   npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
-                    i], ind11.mat[, i], ind12.mat[, i], method, n.cores = n0.cores, warning = warning, ...)
+                    i], ind11.mat[, i], ind12.mat[, i], method, band  = band, n.cores = n0.cores, warning = warning, ...)
                 }, mc.cores = n.cores)
             } else {
                 fits = mclapply(1:split, f <- function(i) {
                   set.seed(i + randSeed)
                   npc.split(x, y, p, alpha, delta, ind01.mat[, i], ind02.mat[,
-                    i], ind1, ind1, method, n.cores = n0.cores, warning = warning, ...)
+                    i], ind1, ind1, method, band  = band, n.cores = n0.cores, warning = warning, ...)
                 }, mc.cores = n.cores)
             }
 

@@ -47,7 +47,7 @@ find.optim.split <- function(x = NULL, y, method = c("logistic", "penlog", "svm"
    list(split.ratio.min=split.ratio.min, split.ratio.1se = split.ratio.1se, errorm = errorm, errorse = errorse)
 }
 
-npc.core <- function(y, score, alpha = NULL, delta = 0.05, n.cores = 1, warning = TRUE) {
+npc.core <- function(y, score, alpha = 0.05, delta = 0.05, band = FALSE, n.cores = 1, warning = FALSE, ...) {
 
   ind0 = which(y == 0)
   ind1 = which(y == 1)
@@ -60,31 +60,43 @@ npc.core <- function(y, score, alpha = NULL, delta = 0.05, n.cores = 1, warning 
   }
   # loc = bs(1:n0, method = 'bs', alpha, delta, n.cores = n.cores)
 
-  score0 = sort(score[ind0])
-  score1 = sort(score[ind1])
-  obj = find.order(score0, score1, delta, n.cores = n.cores)
+  score0 = score[ind0]
+  score1 = score[ind1]
+  if(band){
+    obj = find.order(score0, score1, delta, n.cores = n.cores)
+    cutoff.list = obj$scores
 
-  cutoff.list = obj$scores
-
-
-  cutoff = NULL
-  alpha.n = length(obj$alpha.u)
-  #min.alpha = sort(obj$alpha.u,partial=2)[2]
-  min.alpha = min(obj$alpha.u)
-  nsmall = FALSE
-  if (!is.null(alpha)) {
-    if (min.alpha > alpha + 1e-10){
-      cutoff = Inf
-      loc = length(ind0)
-      nsmall = TRUE
-      if(warning){
-        warning('Sample size is too small for the given alpha. Try a larger alpha.')
+    cutoff = NULL
+    alpha.n = length(obj$alpha.u)
+    #min.alpha = sort(obj$alpha.u,partial=2)[2]
+    min.alpha = min(obj$alpha.u)
+    nsmall = FALSE
+    loc = NULL
+    cutoff = Inf
+    if (!is.null(alpha) & band==FALSE) {
+      if (min.alpha > alpha + 1e-10){
+        cutoff = Inf
+        loc = length(ind0)
+        nsmall = TRUE
+        if(warning){
+          warning('Sample size is too small for the given alpha. Try a larger alpha.')
+        }
+      } else{
+        loc = min(which(obj$alpha.u <= alpha + 1e-10))
+        cutoff = cutoff.list[loc]
       }
-    } else{
-      loc = min(which(obj$alpha.u <= alpha + 1e-10))
-      cutoff = cutoff.list[loc]
     }
+  } else{
+    #obj = find.order(score0, NULL, delta, n.cores = n.cores)
+    nsmall = FALSE
+    n <- length(score0)
+    score.sort <- sort(score0)
+    s <- 1-pbinom(0:(n-1),size=n,prob=1-alpha)
+    loc <-  min(which(s<=delta))
+    cutoff <- score.sort[loc]
+    obj <- list(scores = score0, beta.l = NULL, beta.u = NULL, alpha.l = NULL, alpha.u = NULL, ru1=NULL,rl1=NULL,ru0=NULL,rl0=NULL)
   }
+
   return(list = list(cutoff = cutoff, loc = loc, sign = sig, alpha.l = obj$alpha.l, alpha.u = obj$alpha.u,
                      beta.l = obj$beta.l, beta.u = obj$beta.u, nsmall = nsmall))
 }
@@ -171,7 +183,7 @@ classification.core <- function(method, train.x, train.y, test.x, ...){
   return(list(fit = fit, test.score = test.score))
 }
 
-npc.split <- function(x, y, p, alpha, delta, ind01, ind02, ind11, ind12, method,
+npc.split <- function(x, y, p, alpha, delta, ind01, ind02, ind11, ind12, method, band  = FALSE,
                       n.cores = 1, warning = TRUE, ...) {
   train.ind = c(ind01, ind11)
   test.ind = c(ind02, ind12)
@@ -184,7 +196,7 @@ npc.split <- function(x, y, p, alpha, delta, ind01, ind02, ind11, ind12, method,
   class.obj = classification.core(method, train.x, train.y, test.x, ...)
   fit = class.obj$fit
   test.score = class.obj$test.score
-  obj = npc.core(test.y, test.score, alpha = alpha, delta = delta, n.cores = n.cores, warning = warning)
+  obj = npc.core(test.y, test.score, alpha = alpha, delta = delta, band  = band, n.cores = n.cores, warning = warning, ...)
 
   object = list(fit = fit, y = test.y, score = test.score, cutoff = obj$cutoff,
                 sign = obj$sign, method = method, beta.l = obj$beta.l, beta.u = obj$beta.u, alpha.l = obj$alpha.l,
@@ -212,15 +224,21 @@ getroc <- function(yhat, y) {
 find.order <- function(score0, score1 = NULL, delta = 0.05, n.cores = 1) {
   ##score0 contains all the candidate cutoffs for the classifier.
 
+
   score0 = sort(score0)
-  score1 = sort(score1)
+
+  if(!is.null(score1)){
+    score1 = sort(score1)
+    n1 = length(score1)
+    if(length(unique(score0))<10) { ##add small random noise if too few unique values.
+      sd1 = sd(score1)
+      score1 = score1 + rnorm(n1, sd = max(1, sd1)*1e-6)
+    }
+  }
   n0 = length(score0)
-  n1 = length(score1)
   if(length(unique(score0))<10) { ##add small random noise if too few unique values.
     sd0 = sd(score0)
-    sd1 = sd(score1)
     score0 = score0 + rnorm(n0, sd = max(1, sd0)*1e-6)
-    score1 = score1 + rnorm(n1, sd = max(1, sd1)*1e-6)
   }
   scores = score0
   alpha.l = alpha.u = beta.l = beta.u = rep(0, n0)
@@ -233,9 +251,13 @@ find.order <- function(score0, score1 = NULL, delta = 0.05, n.cores = 1) {
   #rl0 = n0 + 1 - mcmapply(function(s){sum(score0 >= s)}, scores, mc.cores = n.cores)
   ru0 = rank(score0, ties.method = 'max')
   rl0 = rank(score0, ties.method = 'min')
+  rl1 = ru1 = NULL
+  if(!is.null(score1)){
+
   rl1 = mcmapply(function(s){sum(score1 < s) + s %in% score1 }, scores, mc.cores = n.cores)
   ru1 = mcmapply(function(s){sum(score1 < s) + max(1,sum(score1 == s)) }, scores, mc.cores = n.cores)
 
+  }
 
   alpha.mat = mcmapply(f <- function(i){
     if (ru0[i] == n0){
@@ -244,18 +266,17 @@ find.order <- function(score0, score1 = NULL, delta = 0.05, n.cores = 1) {
       alpha.l = v.list[max(which(pbinom(n0 - rl0[i], n0, v.list) >= 1 - delta))]
     }
     alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
+    c(alpha.l, alpha.u)
+  }, 1:n0, mc.cores = n.cores)
 
-    # if (ru0[i] == 0) {
-    #   alpha.u = 1
-    #   alpha.l = v.list[max(which(pbinom(n0 - rl0[i], n0, v.list) >= 1 - delta))]
-    # } else if (rl0[i] == n0) {
-    #   alpha.l = 0
-    #   alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
-    # } else {
-    #   alpha.u = v.list[min(which(pbinom(n0 - ru0[i], n0, v.list) <= delta))]
-    #   alpha.l = v.list[max(which(pbinom(n0 - rl0[i], n0, v.list) >= 1 - delta))]
-    # }
-     if (ru1[i] >= n1) {
+
+  alpha.l = alpha.mat[1, ]
+  alpha.u = alpha.mat[2, ]
+  beta.l = beta.u = NULL
+  if(!is.null(score1)){
+
+  beta.mat = mcmapply(f <- function(i){
+    if (ru1[i] >= n1) {
       beta.u = 1
       beta.l = v.list[max(which(pbinom(rl1[i]-1, n1, v.list) >= 1 - delta))]
     } else if (rl1[i] == 0) {
@@ -265,17 +286,18 @@ find.order <- function(score0, score1 = NULL, delta = 0.05, n.cores = 1) {
       beta.u = v.list[min(which(pbinom(ru1[i]-1, n1, v.list) <= delta))]
       beta.l = v.list[max(which(pbinom(rl1[i]-1, n1, v.list) >= 1 - delta))]
     }
-    c(alpha.l, alpha.u, beta.l, beta.u)
+    c(beta.l, beta.u)
   }, 1:n0, mc.cores = n.cores)
-  alpha.l = alpha.mat[1, ]
-  alpha.u = alpha.mat[2, ]
-  beta.l = alpha.mat[3, ]
-  beta.u = alpha.mat[4, ]
+  beta.l = beta.mat[1, ]
+  beta.u = beta.mat[2, ]
 
+  }
 
   return(list(scores = scores, beta.l = beta.l, beta.u = beta.u, alpha.l = alpha.l, alpha.u = alpha.u, ru1=ru1,rl1=rl1,ru0=ru0,rl0=rl0))
 
 }
+
+
 
 
 

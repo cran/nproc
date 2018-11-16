@@ -1,3 +1,5 @@
+2018-11-10 Yang Feng <yang.feng@columbia.edu> Version 2.1.4
+*improved the efficiency for computing Neyman-Pearson classifiers. 
 2018-02-13 Yang Feng <yang.feng@columbia.edu> Version 2.1.1
 *added the slda classifier and the nonparametric naive bayes classifier
 *added the adaptive split ratio option
