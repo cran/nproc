@@ -2,10 +2,12 @@ Package: nproc
 Type: Package
 Title: Neyman-Pearson (NP) Classification Algorithms and NP Receiver
         Operating Characteristic (NP-ROC) Curves
-Version: 2.1.4
-Date: 2018-11-10
-Author: Yang Feng, Jingyi Jessica Li, Xin Tong, and Ye Tian
-Maintainer: Yang Feng <yang.feng@columbia.edu>
+Version: 2.1.5
+Date: 2020-01-13
+Authors@R: c(person("Yang", "Feng", email = "yangfengstat@gmail.com",
+  role = c("aut", "cre")),person("Jessica", "Li",
+  role = c("aut")),person("Xin", "Tong",
+  role = c("aut")),person("Ye", "Tian", role=c("ctb")))
 Imports: glmnet, e1071, randomForest, naivebayes, MASS, parallel, ada,
         stats, graphics, ROCR, tree
 Description: In many binary classification applications, such as disease
@@ -36,6 +38,11 @@ URL: http://advances.sciencemag.org/content/4/2/eaao1659
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2018-11-10 18:30:30 UTC; yangfeng
+Packaged: 2020-01-13 16:01:14 UTC; yangfeng
+Author: Yang Feng [aut, cre],
+  Jessica Li [aut],
+  Xin Tong [aut],
+  Ye Tian [ctb]
+Maintainer: Yang Feng <yangfengstat@gmail.com>
 Repository: CRAN
-Date/Publication: 2018-11-16 18:20:03 UTC
+Date/Publication: 2020-01-13 19:20:05 UTC

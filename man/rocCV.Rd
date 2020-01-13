@@ -4,9 +4,9 @@
 \alias{rocCV}
 \title{Calculate the Receiver Operating Characteristics with Cross-validation or Subsampling}
 \usage{
-rocCV(x = NULL, y, method = c("logistic", "penlog", "svm",
-  "randomforest", "lda", "nb", "ada", "tree"), metric = "CV",
-  n.folds = 5, train.frac = 0.5, n.cores = 1, randSeed = 0, ...)
+rocCV(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
+  "lda", "nb", "ada", "tree"), metric = "CV", n.folds = 5,
+  train.frac = 0.5, n.cores = 1, randSeed = 0, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}

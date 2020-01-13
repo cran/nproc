@@ -4,9 +4,9 @@
 \alias{nproc}
 \title{Calculate the Neyman-Pearson Receiver Operating Characteristics}
 \usage{
-nproc(x = NULL, y, method = c("logistic", "penlog", "svm",
-  "randomforest", "lda", "nb", "nnb", "ada", "tree"), delta = 0.05,
-  split = 1, split.ratio = 0.5, n.cores = 1, randSeed = 0, ...)
+nproc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
+  "lda", "nb", "nnb", "ada", "tree"), delta = 0.05, split = 1,
+  split.ratio = 0.5, n.cores = 1, randSeed = 0, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}

@@ -160,7 +160,7 @@ classification.core <- function(method, train.x, train.y, test.x, ...){
     lda.y[train.y == 0] = -n/n0
     lda.y[train.y == 1] = n/n1
     fit = cv.glmnet(train.x, lda.y, ...)
-    test.score = predict(fit$glmnet.fit, newx = test.x, type = "link", s =       fit$lambda.min)
+    test.score = predict(fit$glmnet.fit, newx = test.x, type = "link", s = fit$lambda.min)
     test.score = as.vector(test.score)
   } else if (method == "nb") {
     train.data = data.frame(train.x, y = train.y)

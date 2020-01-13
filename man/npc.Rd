@@ -4,11 +4,10 @@
 \alias{npc}
 \title{Construct a Neyman-Pearson Classifier from a sample of class 0 and class 1.}
 \usage{
-npc(x = NULL, y, method = c("logistic", "penlog", "svm",
-  "randomforest", "lda", "slda", "nb", "nnb", "ada", "tree"),
-  alpha = 0.05, delta = 0.05, split = 1, split.ratio = 0.5,
-  n.cores = 1, band = FALSE, nfolds = 10, randSeed = 0,
-  warning = TRUE, ...)
+npc(x = NULL, y, method = c("logistic", "penlog", "svm", "randomforest",
+  "lda", "slda", "nb", "nnb", "ada", "tree"), alpha = 0.05, delta = 0.05,
+  split = 1, split.ratio = 0.5, n.cores = 1, band = FALSE,
+  nfolds = 10, randSeed = 0, warning = TRUE, ...)
 }
 \arguments{
 \item{x}{n * p observation matrix. n observations, p covariates.}
